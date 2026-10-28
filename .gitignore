@@ -1,0 +1,17 @@
+# ---- 临时产物（会话中间文件，可随时重建）----
+.work/
+.npm-cache/
+__pycache__/
+*.pyc
+
+# ---- 文献原文 PDF（约 37 MB，可由 refs/tools/ 重新下载）----
+# 下载记录见 refs/download-results.json 与 refs/参考文献原文获取清单-20261027.md
+refs/pdfs/*.pdf
+
+# ---- 系统/编辑器杂项 ----
+Thumbs.db
+desktop.ini
+.DS_Store
+*.tmp
+~$*.docx
+~$*.pdf

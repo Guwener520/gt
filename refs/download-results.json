@@ -1,0 +1,88 @@
+[
+  {
+    "key": "AE38NF87",
+    "file": "AE38NF87_Jimenez2024_SWE-bench.pdf",
+    "status": "ok",
+    "bytes": 4533722,
+    "url": "https://arxiv.org/pdf/2310.06770"
+  },
+  {
+    "key": "65PKIFZ6",
+    "file": "65PKIFZ6_Hong2024_MetaGPT.pdf",
+    "tried": [
+      {
+        "url": "https://arxiv.org/pdf/2308.00352",
+        "err": "IncompleteRead: IncompleteRead(9484126 bytes read, 7269508 more expected)"
+      }
+    ],
+    "status": "failed"
+  },
+  {
+    "key": "ANNZSKQM",
+    "file": "ANNZSKQM_Wang2024_CodeAct.pdf",
+    "status": "ok",
+    "bytes": 4345392,
+    "url": "https://arxiv.org/pdf/2402.01030"
+  },
+  {
+    "key": "IZ7ZP35I",
+    "file": "IZ7ZP35I_Wang2025_OpenHands.pdf",
+    "status": "ok",
+    "bytes": 3293124,
+    "url": "https://arxiv.org/pdf/2407.16741"
+  },
+  {
+    "key": "ENWWAKKP",
+    "file": "ENWWAKKP_Yang2024_SWE-agent.pdf",
+    "status": "ok",
+    "bytes": 4963538,
+    "url": "https://arxiv.org/pdf/2405.15793"
+  },
+  {
+    "key": "QQIJIJRN",
+    "file": "QQIJIJRN_Qian2024_ChatDev.pdf",
+    "status": "ok",
+    "bytes": 3342208,
+    "url": "https://aclanthology.org/2024.acl-long.810.pdf"
+  },
+  {
+    "key": "GF7S8GGG",
+    "file": "GF7S8GGG_Kagdi2007_MSR-survey.pdf",
+    "status": "ok",
+    "bytes": 664230,
+    "url": "http://www.cs.kent.edu/~jmaletic/papers/JSME07-survey.pdf"
+  },
+  {
+    "key": "FKUGWJ53",
+    "file": "FKUGWJ53_Pimentel2017_noWorkflow.pdf",
+    "status": "ok",
+    "bytes": 665543,
+    "url": "https://vldb.org/pvldb/vol10/p1841-pimentel.pdf"
+  },
+  {
+    "key": "U9XIYLPZ",
+    "file": "U9XIYLPZ_Falleri2014_GumTree.pdf",
+    "tried": [
+      {
+        "url": "https://hal.science/hal-01054552/document",
+        "err": "ValueError: not a PDF (content-type=text/html; charset=utf-8, first=b'<!doctype html><html lang=\"en\"><head><ti')"
+      },
+      {
+        "url": "https://hal.science/hal-01054552/file/main.pdf",
+        "err": "ValueError: not a PDF (content-type=text/html; charset=utf-8, first=b'<!doctype html><html lang=\"en\"><head><ti')"
+      },
+      {
+        "url": "https://inria.hal.science/hal-01054552/document",
+        "err": "ValueError: not a PDF (content-type=text/html; charset=utf-8, first=b'<!doctype html><html lang=\"en\"><head><ti')"
+      }
+    ],
+    "status": "failed"
+  },
+  {
+    "key": "7WAR8TSF",
+    "file": "7WAR8TSF_Parnin2011_Resumption.pdf",
+    "status": "ok",
+    "bytes": 407440,
+    "url": "https://link.springer.com/content/pdf/10.1007/s11219-010-9104-9.pdf"
+  }
+]
