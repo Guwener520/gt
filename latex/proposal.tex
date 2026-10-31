@@ -1,0 +1,26 @@
+% 开题报告入口（doctype=proposal）—— 内容见 chapters/proposal_body.tex
+% 编译：latexmk -xelatex proposal.tex
+\documentclass[
+  oneside,
+  doctype=proposal,
+  degree=bachelor,
+  field=science,
+  biblatex=true,
+  fontset=windows,
+  minted=false,
+  algo=algpseudocode,
+  fullwidthstop=circle,
+  times=false,
+]{tongjithesis}
+
+\input{chapters/tj-extras}
+
+\begin{document}
+\pagestyle{empty}
+
+\input{chapters/metadata}
+\MakeDocument
+\pagestyle{tjformhead}
+\input{chapters/proposal_body}
+
+\end{document}

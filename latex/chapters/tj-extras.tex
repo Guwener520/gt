@@ -1,0 +1,91 @@
+% ============================================================
+%  chapters/tj-extras.tex —— 本课题对三份行政表格的本地补充
+%  模板 style/ 目录保持原样（便于随上游升级），所有补充集中在本文件。
+%  由 proposal.tex / taskbook.tex 在 \begin{document} 之前 \input。
+% ============================================================
+
+% ---- 1. 特殊字符：正文按原稿直书，此处映射到数学符号 ----
+% 模板以 fontspec + newtx 排西文；fandol / Windows 系统字体均不含下列数学符号的
+% 文本字形，若不映射，编译日志只会报 Missing character 而静默丢字。
+\RequirePackage{newunicodechar}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\newunicodechar{≥}{\ensuremath{\geq}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+\newunicodechar{−}{\ensuremath{-}}
+\newunicodechar{κ}{\ensuremath{\kappa}}
+\newunicodechar{Δ}{\ensuremath{\Delta}}
+\newunicodechar{⁶}{\ensuremath{^{6}}}
+
+% ---- 2. 下划线：正文中的文件名/标识符（metric_coverage.py、.gitattributes 等）直书 ----
+% 不开此包则每个下划线都要写成 \_，既易漏又难维护；[strings] 只影响正文，数学模式不受影响。
+\RequirePackage[strings]{underscore}
+
+% ---- 3. 图/表编号：按“行政表格小节号-序号”编号 ----
+% 表格 doctype 不含 \chapter，类文件的 \counterwithin{figure}{chapter} 会使图/表
+% 排成“图 0.1”。此处按小节手工接管编号，用法：
+%   \tjformsection{一、……}\tjformsecnum{1}
+% 其后的图、表依次为 图 1-1、表 1-1……
+\newcommand{\tjformsecnum}[1]{%
+  \setcounter{figure}{0}%
+  \setcounter{table}{0}%
+  \renewcommand{\thefigure}{#1-\arabic{figure}}%
+  \renewcommand{\thetable}{#1-\arabic{table}}%
+}
+
+% ---- 4. 三级小节标题：小四宋体加粗 ----
+% 官方表格只规定“一、/ 1．”两级标题；原稿的“（一）（二）”作为第三级，
+% 用宋体加粗与二级的黑体区分，避免与正文中“（1）（2）”行内引导句混淆。
+\newcommand{\tjformsubsub}[1]{%
+  \par\vspace{0.5\baselineskip}%
+  \noindent{\tjfontbody\songti\bfseries\selectfont\hspace{2em}#1}\par
+  \vspace{0.5\baselineskip}%
+}
+
+% ---- 5. 参考文献列表 ----
+% 两份行政表格的参考文献按模板对该栏的要求排版：悬挂缩进 0.74cm、序号左对齐至页边距、
+% 与论文正文参考文献（GB/T 7714-2025 的 gb7714 样式）的标点与缩进一致。
+% 条目不进 .bib 数据库，而是照录源稿定稿文本——源稿书目已逐条核验（DOI/卷期/页码），
+% 直录可确保与已审定的 Word 版完全一致，不引入转录误差；编号按列表顺序自动生成 [1]…
+\newenvironment{tjreflist}{%
+  \begin{enumerate}[%
+    label={[\arabic*]},%
+    align=left,%
+    labelindent=0pt,%
+    labelwidth=0.74cm,%
+    labelsep=0pt,%
+    leftmargin=0.74cm,%
+    itemindent=0pt,%
+    itemsep=3pt,%
+    parsep=0pt,%
+    topsep=0.5\baselineskip,%
+    partopsep=0pt]%
+}{\end{enumerate}}
+
+% ---- 6. 页眉与页码：与学院下发的 Word 表格一致 ----
+% 开题报告的 Word 表格有页眉“本科毕业设计（论文）开题报告”与页脚页码；
+% 任务书的 Word 表格只有页脚页码。模板上游对三份表格统一用 \pagestyle{empty}，
+% 此处按学院实际表格补齐（封面页仍由入口文件的 \pagestyle{empty} 保持空白）。
+% 页脚与页面下边距：类文件给三份表格设了 bottom=1.0cm（28.45pt），而 LaTeX 默认
+% \footskip=30pt 会把页脚推到纸张边缘之外（页码被裁掉）。此处收窄到 15pt，
+% 使页码基线下移 0.53cm、距纸张下边缘约 0.47cm，完整可见且不与正文末行相碰。
+\setlength{\footskip}{15pt}
+
+\fancypagestyle{tjformhead}{%
+  \fancyhf{}%
+  \fancyhead[C]{\zihao{5}\songti\selectfont 本科\tjheadertext 开题报告}%
+  \fancyfoot[C]{\zihao{5}\selectfont\thepage}%
+  \renewcommand{\headrulewidth}{0.4pt}%
+  \renewcommand{\footrulewidth}{0pt}%
+}
+\fancypagestyle{tjformplain}{%
+  \fancyhf{}%
+  \fancyfoot[C]{\zihao{5}\selectfont\thepage}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \renewcommand{\footrulewidth}{0pt}%
+}
+
+% ---- 7. 开题报告摘要块开关 ----
+% 官方开题报告表格无“摘要”栏；本课题保留原稿摘要以便与 Word 版对照。
+% 学院若不允许，删除 proposal_body.tex 中 \iftjproposalabstract … \fi 之间的内容即可。
+\newif\iftjproposalabstract
+\tjproposalabstracttrue

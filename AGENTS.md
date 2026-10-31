@@ -96,6 +96,13 @@ thesis/
   task-book.md             # 任务书正文（Markdown 源稿，便于版本管理）
   proposal.md              # 开题报告正文（Markdown 源稿）
   figures/                 # 开题报告插图（由 scripts/make_figures.py 生成）
+latex/                     # TongjiThesis v1.5.1 排版工程（任务书/开题报告，后续论文正文）
+  style/                   # 文档类与字体定义（上游原样，不改）
+  chapters/                # metadata.tex 封面信息 + *_body.tex 正文 + tj-extras.tex 本地补充宏
+  bib/                     # 模板示例库（论文正文用）；两份行政表格的文献为直录列表
+  figures/                 # 模板徽标 + 由 thesis/figures/ 复制的三张插图
+  VERSION.md               # 模板版本、取用方式、本地改动清单、构建命令
+  CONVENTIONS.md           # 两份行政表格正文的写作约定（改 body 前必读）
 deliverables/              # 交付给学院/导师的成品（docx/pdf/pptx）
   *.docx
 docs/                      # 调研笔记、设计文档、评审意见记录
@@ -112,6 +119,11 @@ src/                       # 原型系统源码（后续建立）
 - 修改任何论文/任务书稿件前，先读 `thesis/` 下现有文件，避免覆盖他人修改。
 - 每次实质性交付，在 `docs/CHANGELOG.md` 追加一行（日期 / 变更 / 影响文件）。
 - 生成 Word 交付件时，Markdown 源稿与 docx 必须同源同步，不要只改 docx。
+- **任务书 / 开题报告的正式排版以 `latex/` 为准**：`thesis/task-book.md`、`thesis/proposal.md` 是内容源稿，
+  内容有改动时先改 md、再同步 `latex/chapters/*_body.tex`（或反之），两者差异随 CHANGELOG 记录；
+  编译与归档：`python scripts/build_latex.py`（PDF 落在 `deliverables/`）。
+- 两份行政表格的参考文献为**直录列表**（照录已核验的定稿文本），不要改成 biblatex/.bib；
+  论文正文（`latex/main.tex`）才走 biblatex + `latex/bib/`。理由见 `latex/VERSION.md`。
 - 遇到学院/导师的具体格式模板，**以模板为准**，并回写本文件第 5 节。
 
 ---

@@ -1,0 +1,26 @@
+% 任务书入口（doctype=taskbook）—— 内容见 chapters/taskbook_body.tex
+% 编译：latexmk -xelatex taskbook.tex
+\documentclass[
+  oneside,
+  doctype=taskbook,
+  degree=bachelor,
+  field=science,
+  biblatex=true,
+  fontset=windows,
+  minted=false,
+  algo=algpseudocode,
+  fullwidthstop=circle,
+  times=false,
+]{tongjithesis}
+
+\input{chapters/tj-extras}
+
+\begin{document}
+\pagestyle{empty}
+
+\input{chapters/metadata}
+\MakeDocument
+\pagestyle{tjformplain}
+\input{chapters/taskbook_body}
+
+\end{document}

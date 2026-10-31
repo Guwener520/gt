@@ -8,6 +8,21 @@ __pycache__/
 # 下载记录见 refs/download-results.json 与 refs/参考文献原文获取清单-20261027.md
 refs/pdfs/*.pdf
 
+# ---- LaTeX 中间产物（latex/ 下，可随时重建；PDF 由 deliverables/ 归档）----
+latex/**/*.aux
+latex/**/*.bbl
+latex/**/*.bcf
+latex/**/*.blg
+latex/**/*.fls
+latex/**/*.fdb_latexmk
+latex/**/*.log
+latex/**/*.out
+latex/**/*.toc
+latex/**/*.xdv
+latex/**/*.synctex.gz
+latex/**/*.run.xml
+latex/*.pdf
+
 # ---- 系统/编辑器杂项 ----
 Thumbs.db
 desktop.ini
