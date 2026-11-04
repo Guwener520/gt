@@ -8,11 +8,11 @@
 - 模板：TongjiThesis v1.5.1，`style/` **一律不改**。类已加载 float / booktabs / tabularx /
   longtable / caption / subcaption / enumitem[inline] / newunicodechar / underscore。
 - 编译环境：TeX Live 2026，XeLaTeX + latexmk，`fontset=windows`（宋体/黑体）。
-- 内容源稿（**唯一内容来源，不得增删论点、不得改写数据**）：
-  - 开题报告：`../thesis/proposal.md`（v3 定稿，13 节 + 摘要 + 44 篇文献）
-  - 任务书：`../thesis/task-book.md`（8 节 + 18 篇文献）
-- Word 版成品（用于核对文字）：`../deliverables/毕业设计开题报告-v3-20261028.pdf`、
-  `../deliverables/毕业设计任务书-v1-20261027.pdf`
+- 可编辑 Markdown 镜像（与 body 逐段对应，供改稿；改后同步 body，见 `AGENTS.md` 第 7 节）：
+  - 开题报告：`../thesis/proposal.md`（4 节 + 摘要 + 44 篇文献；由 `scripts/tex2md.py` 从 body 生成）
+  - 任务书：`../thesis/task-book.md`（6 节 + 18 篇文献；同上）
+- Word 版成品（用于核对文字）：`../deliverables/archive/毕业设计开题报告-v3-20261028.pdf`、
+  `../deliverables/毕业设计任务书-v6-20261103.docx`
 
 ## 1. 可用排版命令（不要手写字号/字族）
 
@@ -38,10 +38,17 @@
 - 表题在上、图题在下，由 `\caption` 在 `table`/`figure` 环境内自动处理。
 - 短表：`\begin{table}[H]\centering\begin{tabularx}{\linewidth}{...}` + `\toprule/\midrule/\bottomrule`，
   表内字号由类自动设为五号。
-- 长表（可能跨页，如评价指标表、风险表、进度表）：`longtable`，在 `\endhead` 首行写
+- 长表（可能跨页，如评价指标表）：`longtable`，在 `\endhead` 首行写
   `\tjlongtablecont{列数}` 生成“续表”行；列宽用 `p{...}` 固定，必要时 `\small`。
-- 图：`\begin{figure}[htbp]\centering\includegraphics[width=\linewidth]{figures/fig1-route.png}`，
-  caption 在 figure 内、图之下。三张图已就位：fig1-route.png、fig2-arch.png、fig3-gantt.png。
+- 图：`\begin{figure}[H]\centering\includegraphics[width=\linewidth]{figures/fig1-route.png}`，
+  caption 在 figure 内、图之下。三张图已就位：`fig1-route.png`（四模块技术路线）、
+  `fig2-model.png`（任务中心八实体关系）、`fig3-gantt.png`（32 教学周甘特）。图较大时用
+  `[H]` 固定在正文位置，避免浮动到下一页后把段落切开。
+- 表 1-1（文献综述对照表，2026-11-04 新增）：五列八行，`tabularx` 中用四个定宽 `p{}` 列加一个
+  `X` 列自适应，并 `\setlength{\tabcolsep}{4pt}` 收窄列距，使总宽等于 `\linewidth`；**必须保留至少一个
+  `X` 列**，全部用定宽列时表格会窄于版心并报 `Underfull \hbox (badness 10000) in alignment`。
+  该表随文 `[H]` 放置，正文以 `\ref{tab:compare}` 指向；表下不设表注（“未涉及”的口径写在正文同一段末），
+  以免注文在页底被拆开。
 
 ## 3. 参考文献（直录，不用 .bib）
 
@@ -81,6 +88,9 @@
 ## 6. 自检（提交前必须做）
 
 ```powershell
+# 在工作区根目录：先确认 Markdown 镜像与 tex 同步
+python scripts/tex2md.py --check
+
 cd latex
 latexmk -xelatex -interaction=nonstopmode -file-line-error -halt-on-error proposal.tex   # 或 taskbook.tex
 Select-String -Path proposal.log -Pattern 'Missing character|Undefined control sequence|LaTeX Warning: Reference|Overfull \\hbox' | Select-Object -First 20

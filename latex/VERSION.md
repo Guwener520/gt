@@ -15,7 +15,7 @@
   `metadata.tex` 为封面信息（两份表格共用）；`tj-extras.tex` 为本课题新增的本地补充宏；
   其余 `00_abstract`/`01_guide`…`06_conclusion`/`ack`/`appendix` 为模板演示内容，待论文写作时替换。
 - `figures/`：`tongji.pdf`/`tongji-header.pdf` 为模板徽标（三份表格封面与页眉必需）；
-  `fig1-route.png`/`fig2-arch.png`/`fig3-gantt.png` 由 `scripts/make_figures.py` 生成。
+  `fig1-route.png`/`fig2-model.png`/`fig3-gantt.png` 由 `scripts/make_figures.py` 生成。
 - `bib/note.bib`：模板示例文献库，仅 `main.tex`（论文正文）使用；两份行政表格的参考文献为直录列表，见下。
 
 ## 取用方式（可复现）
@@ -39,7 +39,7 @@ git -c http.sslBackend=openssl clone --depth 1 --branch v1.5.1 https://github.co
 2. 新增 `chapters/tj-extras.tex`：特殊字符映射、下划线直书、图表编号接管、三级标题、
    参考文献列表环境 `tjreflist`、开题报告摘要开关。
 3. 改写 `chapters/metadata.tex`（封面信息）与两个 body 文件（正文内容）。
-4. 新增 `figures/fig1-route.png`、`fig2-arch.png`、`fig3-gantt.png`（复制自 `thesis/figures/`）。
+4. 新增 `figures/fig1-route.png`、`fig2-model.png`、`fig3-gantt.png`（复制自 `thesis/figures/`）。
 5. 删除上游 `figures/tongjithesis.png|svg`（1.9 MB 预览图，正文不使用）。
 6. 页眉页脚按学院 Word 表格补齐：开题报告加页眉「本科毕业设计（论文）开题报告」+ 页脚页码，
    任务书只有页脚页码（`tjformhead`/`tjformplain` 两个 fancypagestyle）；封面页仍为空。
@@ -49,8 +49,9 @@ git -c http.sslBackend=openssl clone --depth 1 --branch v1.5.1 https://github.co
 
 ## 参考文献为何是直录列表
 
-两份行政表格的参考文献照录 `thesis/proposal.md`、`thesis/task-book.md` 中已逐条核验的定稿文本，
-用 `tjreflist` 环境排版（悬挂缩进 0.74cm、序号左对齐至页边距），**不建 .bib、不用 biblatex**：
+两份行政表格的参考文献照录已逐条核验的定稿文本（`thesis/proposal.md`、`thesis/task-book.md`
+是 body 的可编辑 Markdown 镜像，二者逐条一致），用 `tjreflist` 环境排版（悬挂缩进 0.74cm、
+序号左对齐至页边距），**不建 .bib、不用 biblatex**：
 
 - 模板对该栏的要求只是“悬挂缩进 0.74cm，与正文参考文献格式一致”，并未要求文献数据库；
 - 直录可保证与已审定的 Word 版逐字一致，避免 44+18 条书目在转录中引入作者/卷期/页码误差
@@ -73,4 +74,8 @@ latexmk -xelatex proposal.tex
 latexmk -xelatex taskbook.tex
 # 或在工作区根目录用脚本一次构建并归档到 deliverables/
 python scripts/build_latex.py
+
+# 生成 / 校验可编辑 Markdown 镜像（thesis/task-book.md、thesis/proposal.md）
+python scripts/tex2md.py
+python scripts/tex2md.py --check
 ```

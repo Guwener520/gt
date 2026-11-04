@@ -3,7 +3,7 @@ import re
 from docx import Document
 from docx.shared import Pt
 
-path = r"D:\DSHCode\graduationThesis\deliverables\毕业设计任务书-v1-20261027.docx"
+path = r"D:\DSHCode\graduationThesis\deliverables\毕业设计任务书-v2-20261101.docx"
 d = Document(path)
 
 bad = []

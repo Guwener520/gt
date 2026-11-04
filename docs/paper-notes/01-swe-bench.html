@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>让模型去修真实 GitHub issue：SWE-bench 如何把"改代码"变成可自动判分的考题｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="b">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>第 1 篇 · SWE-bench</span></div>
+    <h1>让模型去修真实的 GitHub issue：SWE-bench 把"改代码"变成了可自动判分的考题</h1>
+    <p class="en">SWE-bench: Can Language Models Resolve Real-World GitHub Issues?</p>
+    <p class="byline"><strong>Carlos E. Jimenez, John Yang et al.</strong> · ICLR 2024 · 原文 52 页</p>
+    <div class="chips">
+      <span class="chip hot">基准（Benchmark）</span>
+      <span class="chip">仓库级缺陷修复评测</span>
+      <span class="chip">与本课题关联 ★★★★★</span>
+      <span class="chip">精读用时 ≈ 20 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>在 2,294 个真实 GitHub issue 上，当时最强的 Claude 2 只解决 1.96%——"自包含代码生成"已饱和，仓库级修复才是下一道坎，而这把尺子也成了后来所有代码智能体的公共基准。</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>SWE-bench 把 GitHub 上「issue → 被合并的 PR → PR 自带的测试」这条现成链条反过来用：issue 当题目，仓库快照当卷面，测试当判分器，凑出 2,294 道题，来自 12 个真实 Python 仓库。最强模型 Claude 2 只解决 1.96%（原文 p.1）。它证明"自包含代码生成"已经饱和，并把"定位—跨文件修改—不破坏既有行为"确立为智能体要解决的问题。</p>
+  </div>
+
+  <p>2021 年 HumanEval 用一百多道手写函数题让代码生成可自动判分；到 2023 年这类题已被刷到很高，作者直言现有基准已经饱和、抓不住前沿（原文 p.1）。SWE-bench 的贡献不是发明新任务，而是找到了可持续供给的题目来源：只要 GitHub 上还有人修 bug，就有新题。它之后几乎每篇代码智能体论文都以它为主表，也因此成了被批评的对象。</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>先读 §2.1 的三段过滤（方法核心），再读 §5 结果表，然后翻到附录 §A.4 看判分规则。§5.1 的定性分析别跳过：那里有数字说不出来的东西。</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>考一个模型"会不会修 bug"，最省事的办法是自己出题：写一段有 bug 的代码，加一个断言。可这样出的题"题面即答案"——bug 就在你给的二十行里。HumanEval 就是这样：题目自包含、答案几行、测试隐藏。</p>
+
+  <p>真实开发不是这样。你在几万行的仓库里收到一句"warm start 时 GBDT 会泄漏数据"，得先猜它指哪个模块，再在几千个文件里找到可疑的几十行，改完还得保证没弄坏别处。SWE-bench 的立场是：定位、跨文件修改、不破坏既有行为才是难点，而人工题把这些全抹掉了。</p>
+
+  <div class="vs">
+    <div><h4>之前的做法（HumanEval 一类）</h4><ul>
+      <li>题目自包含，几十行；一个函数一个答案</li>
+      <li>测试与题目同时诞生</li>
+      <li>难度靠人估，刷穿就换题</li>
+    </ul></div>
+    <div><h4>这篇的做法</h4><ul>
+      <li>题目来自真实 issue，平均 195 词（原文 p.4）</li>
+      <li>答案是真实 PR 补丁：平均改 1.7 文件、32.8 行（原文 p.4）</li>
+      <li>判分靠 PR 作者写的测试，至少一个要从失败变通过（原文 p.2）</li>
+    </ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>HumanEval 是场地考：倒库、侧方，路线固定。SWE-bench 是路考，还直接把你丢进早高峰——路线不告诉你，但没撞车没违章（测试全过）就算过。场地考筛不掉"只会在场地里开车"的。</p>
+  </div></section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：一句话与一张图</h2>
+  <p><strong>一句话：不要去造题，去"捡"题。</strong>开源协作流程每天都在生产「真实问题 + 被接受的解法 + 验证解法的测试」这三件套。把测试扣下来当判分器，其余部分当标准答案，题目和答案就同时到手，几乎不用人工标注。</p>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 372" role="img" aria-label="SWE-bench 的两段结构：上半是从 PR 到任务实例的三级漏斗，下半是模型生成补丁后的执行判分流程">
+        <defs>
+          <marker id="ar1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/></marker>
+        </defs>
+        <text x="10" y="18" font-size="12" font-weight="700" fill="#0f766e">A. 构建：从 12 个仓库的 PR 里筛出 2,294 道题</text>
+
+        <rect x="8" y="32" width="196" height="74" rx="10" fill="#e3f2ef" stroke="#0f766e" stroke-width="1.5"/>
+        <text x="106" y="56" text-anchor="middle" font-size="12.5" fill="#191c1f">12 个 Python 仓库</text>
+        <text x="106" y="76" text-anchor="middle" font-size="12" fill="#3d4450">抓取全部 PR</text>
+        <text x="106" y="96" text-anchor="middle" font-size="13" font-weight="700" fill="#0f766e">93,139</text>
+
+        <line x1="206" y1="69" x2="240" y2="69" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+        <rect x="244" y="32" width="212" height="74" rx="10" fill="#ffffff" stroke="#bfe3dc" stroke-width="1.5"/>
+        <text x="350" y="54" text-anchor="middle" font-size="12.5" fill="#191c1f">① 属性过滤</text>
+        <text x="350" y="74" text-anchor="middle" font-size="11.5" fill="#3d4450">merged + 关联 issue</text>
+        <text x="350" y="92" text-anchor="middle" font-size="11.5" fill="#3d4450">+ 改动过测试文件</text>
+        <text x="350" y="112" text-anchor="middle" font-size="12" font-weight="700" fill="#0f766e">→ 11,407</text>
+
+        <line x1="458" y1="69" x2="492" y2="69" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+        <rect x="496" y="32" width="216" height="74" rx="10" fill="#ffffff" stroke="#bfe3dc" stroke-width="1.5"/>
+        <text x="604" y="54" text-anchor="middle" font-size="12.5" fill="#191c1f">② 执行过滤</text>
+        <text x="604" y="74" text-anchor="middle" font-size="11.5" fill="#3d4450">装环境，跑改前 / 改后两遍</text>
+        <text x="604" y="92" text-anchor="middle" font-size="11.5" fill="#3d4450">至少一个测试 fail→pass</text>
+        <text x="604" y="112" text-anchor="middle" font-size="12" font-weight="700" fill="#0f766e">→ 2,294</text>
+
+        <text x="10" y="140" font-size="11.5" fill="#6b7280">数字见原文 p.20 表 10；执行过滤这一步大约再筛掉一半候选（原文 p.19）。</text>
+
+        <line x1="8" y1="152" x2="712" y2="152" stroke="#e6e2d9" stroke-width="1"/>
+
+        <text x="10" y="176" font-size="12" font-weight="700" fill="#0f766e">B. 判分：输入里没有测试，输出必须是能 apply 的补丁</text>
+
+        <rect x="8" y="192" width="168" height="62" rx="9" fill="#ffffff" stroke="#bfe3dc" stroke-width="1.5"/>
+        <text x="92" y="214" text-anchor="middle" font-size="12" fill="#191c1f">issue 文本</text>
+        <text x="92" y="234" text-anchor="middle" font-size="12" fill="#191c1f">+ 仓库快照</text>
+
+        <line x1="176" y1="223" x2="206" y2="223" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+        <rect x="210" y="192" width="150" height="62" rx="9" fill="#ffffff" stroke="#bfe3dc" stroke-width="1.5"/>
+        <text x="285" y="214" text-anchor="middle" font-size="12" fill="#191c1f">语言模型</text>
+        <text x="285" y="234" text-anchor="middle" font-size="12" fill="#3d4450">生成 .patch</text>
+
+        <line x1="360" y1="223" x2="390" y2="223" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+        <rect x="394" y="192" width="140" height="62" rx="9" fill="#ffffff" stroke="#bfe3dc" stroke-width="1.5"/>
+        <text x="464" y="214" text-anchor="middle" font-size="12" fill="#191c1f">apply 到仓库</text>
+        <text x="464" y="234" text-anchor="middle" font-size="12" fill="#3d4450">（失败则自动修）</text>
+
+        <line x1="534" y1="223" x2="564" y2="223" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+        <rect x="568" y="192" width="144" height="62" rx="9" fill="#ffffff" stroke="#bfe3dc" stroke-width="1.5"/>
+        <text x="640" y="214" text-anchor="middle" font-size="12" fill="#191c1f">跑测试</text>
+        <text x="640" y="234" text-anchor="middle" font-size="12" fill="#3d4450">解析每条用例状态</text>
+
+        <line x1="360" y1="254" x2="360" y2="278" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ar1)"/>
+
+        <rect x="8" y="282" width="704" height="76" rx="10" fill="#e3f2ef" stroke="#0f766e" stroke-width="1.5"/>
+        <text x="360" y="306" text-anchor="middle" font-size="12.5" font-weight="700" fill="#191c1f">判定：FAIL_TO_PASS 全部通过 ∧ PASS_TO_PASS 全部通过</text>
+        <text x="360" y="328" text-anchor="middle" font-size="11.5" fill="#3d4450">FAIL_TO_PASS 回答"这个 bug 修好了吗"，PASS_TO_PASS 回答"你有没有把别处弄坏"（原文 p.21）</text>
+        <text x="360" y="348" text-anchor="middle" font-size="11.5" fill="#6b7280">指标 % Resolved = 通过全部测试的任务实例占比；任一用例缺失或非 pass 即判失败</text>
+      </svg>
+    </div>
+    <figcaption>图 1　上半是数据集漏斗：真实 PR 先按属性筛、再按执行结果筛，剩 2,294 道。下半是判分闭环：模型看不到测试，只能交补丁，判分完全由执行结果决定。</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p><strong>① 判分是执行，不是比对文本。</strong>测试全过就算解决，模型写得多丑、跟参考解差多远都不影响判分，所以一题多解成立（原文 p.3）。</p>
+    <p><strong>② 测试是为这个 bug 专门写的。</strong>它编码的是"什么叫修好"，而不是"什么叫和参考答案一样"。</p>
+    <p><strong>③ "至少一个测试 fail→pass"同时保证题目非平凡且可判定。</strong>改前就通过证明不了任何事，改完还不通过说明题目本身有问题（原文 p.2—p.3）。</p>
+    <p><strong>④ 可持续性来自时间。</strong>新 issue 天然产生在模型训练截止之后；作者用 2023 年前后的切分做过检查（原文 p.7），但这个检查偏弱，第 06 节展开。</p>
+  </div>
+
+  <p>这四层合起来是"用工程副产品做标注"的套路：<strong>它没有发明新数据，只是发现了旧数据里已经存在的监督信号</strong>。本课题的证据链是同一件事的镜像——对话、工具调用、测试结果本来就在那里，缺的是按"任务"组织它们的结构。</p>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：它到底怎么做的</h2>
+  <p>原文 §2.1 把构建写成三级流水线。</p>
+
+  <ol class="steps">
+    <li><b>抓 PR</b>　输入是 PyPI 上 2023 年 8 月下载量前 100 的包（原文 p.16）；核对许可证后用 GitHub API 拉全部 PR；输出 12 个仓库、93,139 个 PR（原文 p.20 表 10）。</li>
+    <li><b>属性过滤</b>　只留：merged；用 "fixes #24" 这类关键词关联到 issue；改动过路径含 test 的文件。输出 11,407 个候选（原文 p.20）。</li>
+    <li><b>执行过滤</b>　按 release 版本建环境 → 装仓库 → 先只应用 test patch 跑一遍记 log<sub>pre</sub> → 再应用参考解跑一遍记 log<sub>post</sub> → 要求至少一个测试从 fail 变 pass，且 log<sub>pre</sub> 无 ImportError/AttributeError（那意味着依赖名写错，"不可能修对"）。输出 2,294 个（原文 p.19—p.20）。</li>
+    <li><b>任务形式化</b>　输入 issue 文本 + base commit 的仓库快照；输出能 apply 的 <span class="term">.patch</span>；判分时把 FAIL_TO_PASS 与 PASS_TO_PASS 全跑一遍（原文 p.21）。</li>
+  </ol>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　构建漏斗与关键规模（原文 p.20 表 10、p.4 表 1）</caption>
+      <thead><tr><th>阶段 / 属性</th><th>规模</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>抓取 PR</td><td class="num">93,139</td><td>12 个 Python 仓库全部 PR</td></tr>
+        <tr><td>属性过滤后</td><td class="num">11,407</td><td>merged + 关联 issue + 改到测试文件</td></tr>
+        <tr><td>执行过滤后</td><td class="num best">2,294</td><td>至少一个测试 fail→pass，可安装可运行</td></tr>
+        <tr><td>Lite 子集</td><td class="num">300</td><td>更自包含，覆盖 11 个仓库（原文 p.4）</td></tr>
+        <tr><td>参考解平均改动</td><td class="num">1.7 文件 / 32.8 行</td><td>最多 31 个文件</td></tr>
+        <tr><td>每实例总测试数</td><td class="num">120.8</td><td>中位数 51 个额外回归测试（原文 p.3）</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>为什么还要 PASS_TO_PASS。</strong>前者问"这个 bug 修好了吗"，后者问"你有没有把别处弄坏"，取自 log<sub>pre</sub> 里本来就通过的测试（原文 p.21）。这把回归测试变成评分的一部分，也解释了它为什么难靠"改测试"作弊：测试文件由 test patch 单独提供，模型改不到。</p>
+
+  <div class="callout warn">
+    <span class="tag">容易误读</span>
+    <p><strong>它不是开放式基准。</strong>输入里没有测试和参考解，输出必须是 patch 文本；判分器不可见。</p>
+    <p><strong>oracle 检索不是上界。</strong>只给参考解改过的文件，未必包含理解行为所需的上下文（原文 p.5），所以 4.8% 不能读成"检索完美就能到 4.8%"。</p>
+    <p><strong>它不记录过程。</strong>只保存输入和最终 patch，中间试了什么、错了多少次，全没有。这决定了它对本课题的边界，见第 07 节。</p>
+  </div>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：数字说明什么</h2>
+  <p>设置：ChatGPT-3.5（16k 上下文）、GPT-4（32k）、Claude 2（100k）、自训 SWE-Llama 7b/13b（≥100k）（原文 p.5 表 4）。上下文两种构造：BM25 稀疏检索（13k/27k/50k 三档）与 oracle（直接给参考解改过的文件，作对照）。指标只有一个：<span class="term">% Resolved</span>。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">1.96%</div><div class="k">Claude 2 + BM25 13k 档（原文 p.5）</div></div>
+    <div class="stat"><div class="v">4.8%</div><div class="k">Claude 2 换 oracle 检索（原文 p.6）</div></div>
+    <div class="stat"><div class="v">51.06%</div><div class="k">BM25 50k 档对 oracle 文件的召回（原文 p.5）</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>表 2　主要结果：不同检索设置下的解决率（%，数据来自原文 p.5 表 2、p.6 表 5、p.7 表 6）</caption>
+      <thead><tr><th>模型</th><th>BM25（最好档）</th><th>oracle</th><th>oracle-collapsed</th></tr></thead>
+      <tbody>
+        <tr><td>Claude 3 Opus</td><td class="num">3.79</td><td class="num">—</td><td class="num best">9.39</td></tr>
+        <tr><td>Claude 2</td><td class="num">1.96</td><td class="num">4.80</td><td class="num">5.93</td></tr>
+        <tr><td>GPT-4（turbo）</td><td class="num">1.31</td><td class="num">—</td><td class="num">3.40</td></tr>
+        <tr><td>ChatGPT-3.5</td><td class="num">0.17</td><td class="num">—</td><td class="num">1.09</td></tr>
+        <tr><td>SWE-Llama 13b</td><td class="num">0.70</td><td class="num">—</td><td class="num">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>反直觉之一：上下文越多，分数越低。</strong>Claude 2 在 13k/27k/50k 三档是 1.96/1.87/1.22（原文 p.5 表 2），而 BM25 召回率同档位是 29.58/44.41/51.06（原文 p.5 表 3）——检索找到了更多正确文件，模型反而更差。作者归因于模型"不擅长在大量代码里定位问题行"、会被无关上下文干扰（原文 p.6）。这把瓶颈从"看不见"改判成"看见了也找不着"，给后来"让模型自己交互式搜"的路线留了空间——第 02 篇的 SWE-agent 整篇就踩在这个结论上。</p>
+
+  <p><strong>反直觉之二：模型倾向做小手术。</strong>能成功应用的模型补丁平均 16.7—30.1 行，参考解平均 74.5 行；模型几乎只改一个文件（1.0 个），参考解平均 1.7 个（原文 p.8 表 8）。定性分析说模型"写原始 Python、不复用仓库已有的库、只求把当前问题堵上"（原文 p.9）。这解释了为什么"能 apply"（Claude 2 为 43.07%）远高于"能 resolve"（1.97%）：补丁语法没问题，语义没解决问题（原文 p.6 表 5）。噪声提醒：GPT-4 只在 25% 子集上评测（原文 p.7 脚注）；SWE-Llama 的 0.70 与 0.31 只差约 9 条任务，不能当"13k 更好"的证据。</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <ul>
+    <li><b>作者自述：</b>任务全是 Python；只建立"最简单直接"的基线，不限制后续方法；只靠执行测试不足以保证生成结果可靠，模型产出常不如人写的全面、高效、可读（原文 p.10）。</li>
+    <li><b>外部质疑：</b>后续批评集中在三点——数据泄漏（训练语料可能已含仓库与解法）、测试覆盖（PASS_TO_PASS 只证明"没弄坏已知行为"）、解法单一化（二值判分只奖励"能过测试"，不奖励可维护性）。这些不在本篇原文范围内，本页不引它们的数字。</li>
+    <li><b>我的判断：</b></li>
+  </ul>
+
+  <p><strong>一、% Resolved 丢了太多信息。</strong>只差一行的补丁和完全跑偏的补丁都得 0。本篇最有价值的是 §5.1 的定性观察（模型不做结构性改进），但它没被量化。如果让我改，会加一列"距离解决还差几个测试"。</p>
+
+  <p><strong>二、"时间切分说明没作弊"这个论证偏弱。</strong>作者比较 2023 年前后的任务，发现多数模型差别不大，因此认为模型不太可能背答案（原文 p.7）。但泄漏不一定表现为"记得答案"，也可能是"熟悉这个仓库的 API 与代码风格"——后者恰恰是它想考的能力的一部分。表 7 里 GPT-4 从 1.96 掉到 0.0，可样本只有 25%，不足以下结论。</p>
+
+  <p><strong>三、它把"检索"和"推理"混在一个数字里。</strong>论文没把"定位正确率"和"修改正确率"分开报，后人难以判断一个 agent 提升的是搜索还是编辑。SWE-agent 的消融正因为它把两者拆开了（见第 02 篇）。</p></section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p>开题报告「一、1」已引 1.96%（对应本篇 p.1），这是最硬的"问题存在"证据，保留。能加强的是「二、2（五）实验与评估方案」里"任务集与数据构造"一段（那里写了"不少于三分之一改写自 SWE-bench Verified 与 SWE-rebench 的真实 issue"）：可补一句论证——引本篇 §2.1 的三段过滤，说明"真实 issue + 真实测试"比自造任务可信，是因为判分依据是执行结果而非出题人的预期。</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p><strong>FAIL_TO_PASS / PASS_TO_PASS 是"验证依据"的现成口径。</strong>研究内容（4）的变更卡片要记录"这次修改被哪次测试验证了"，最小实现是：一个 TestRun 挂若干 TestCaseResult，每条带改前/改后状态；"hunk 被验证"即"有测试从 fail 变 pass，且没有 PASS_TO_PASS 转 fail"。</p></div>
+    <div class="card"><h4>要避开</h4><p><strong>不要用它证明"溯源有用"。</strong>它只记录输入和输出，没有过程数据，既撑不起"信息分散"也撑不起"上下文丢失"；能支撑的只有"以真实任务为单位、以执行结果为判据"这个评测范式。它的任务边界是白送的（一个实例对应一个 issue 加一个 PR），RQ5 没有这种分隔符可用。</p></div>
+  </div>
+
+  <p><strong>对应到哪个模块。</strong>研究内容（1）的 <span class="term">TestRun</span> 与 <span class="term">TestCaseResult</span> 字段可直接照本篇口径定；研究内容（5）的"待验证"一类也可用它定义——"有失败测试或未运行测试的 hunk"。反过来，它缺过程证据，本课题正好生产，这句话可写进"研究空白"一段。</p>
+
+  <p><strong>不能支撑什么。</strong>它不能支撑"任务续接"（任务单次、无中断）、"任务边界判定"（边界由 PR 给定）、"变更与对话关联"（它没有对话）。综述里把这三件事挂到它名下，评审一眼能看出问题。</p>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+  <p>三句：立论、定义难点、自我限定。</p>
+
+  <blockquote>
+    <p>We find real-world software engineering to be a rich, sustainable, and challenging testbed for evaluating the next generation of language models.</p>
+    <p>我们认为真实世界的软件工程是一个内容丰富、可持续、有挑战性的试验场，适合评测下一代语言模型。</p>
+    <span class="src">— 原文 p.1</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Solving SWE-bench requires identifying the relatively small number of lines that need to be edited to solve an issue amongst a sea of context.</p>
+    <p>要解决 SWE-bench，模型必须在海量上下文里找出那相对很少的、需要被修改的几行。</p>
+    <span class="src">— 原文 p.3</span>
+  </blockquote>
+
+  <blockquote>
+    <p>While this work evaluates models using execution-based code testing, relying solely on this method is insufficient to guarantee reliable performance of model generations.</p>
+    <p>本文用执行代码测试来评测模型，但仅依赖这一方法不足以保证模型生成结果的可靠性。</p>
+    <span class="src">— 原文 p.10</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>FAIL_TO_PASS</dt>
+    <dd>改前失败、改后通过的测试。它是"这个 bug 修好了"的直接证据，也是本课题"验证依据"最自然的定义方式。</dd>
+    <dt>PASS_TO_PASS</dt>
+    <dd>改前就通过、改后仍通过的测试。用来防"修好一个、弄坏三个"；本课题可把"PASS_TO_PASS 转 fail"当成回退预警信号。</dd>
+    <dt>gold patch / test patch</dt>
+    <dd>参考解补丁与测试补丁。原始 PR 的改动按文件路径是否含 test 关键词被拆成这两半（原文 p.18）。</dd>
+    <dt>% Resolved</dt>
+    <dd>唯一主指标：通过全部 FAIL_TO_PASS 与 PASS_TO_PASS 的实例占比。注意它是二值的。</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>为什么上下文越长反而越差？你信原文的解释吗？</summary><p>原文归因于"不擅长在大量代码里定位"、被无关上下文干扰（原文 p.6）。方向我认同，但不够：更可能是位置效应——要改的那几行在长上下文里被稀释，而模型对中段信息的利用最差。</p></details>
+    <details><summary>oracle 检索的 4.8% 能当上界吗？</summary><p>不能，原文自己否定了（原文 p.5）。只给改过的文件可能缺少理解调用关系的上下文；oracle-collapsed 还能把 Claude 2 推到 5.93%（原文 p.7），说明"给对文件"和"给对内容"是两件事。</p></details>
+    <details><summary>如果给它加一个"过程"维度，你会加什么？</summary><p>三个字段：工具调用序列、每次测试的输出摘要、"第几步第一次改到正确的文件"。第三个最有价值——它把定位能力与修改能力分开，这正是本课题想做的事。</p></details>
+  </div>
+</section>
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="index.html"><span class="dir">← 上一篇</span>文献精读总览</a>
+    <a href="02-swe-agent.html" style="text-align:right"><span class="dir">下一篇 →</span>SWE-agent</a>
+  </div>
+</div>
+
+<footer>
+  《让模型去修真实的 GitHub issue：SWE-bench 把"改代码"变成了可自动判分的考题》精读笔记 · 基于 ICLR 2024 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

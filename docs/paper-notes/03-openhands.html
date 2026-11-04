@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>把智能体做成平台：OpenHands 的事件流、沙箱与可插拔 agent｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="b">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>第 3 篇 · OpenHands</span></div>
+    <h1>把"智能体"做成平台：OpenHands 用事件流、沙箱与可插拔 agent 把实验变成基础设施</h1>
+    <p class="en">OpenHands: An Open Platform for AI Software Developers as Generalist Agents</p>
+    <p class="byline"><strong>Xingyao Wang, Boxuan Li, Yufan Song et al.</strong> · ICLR 2025 · 原文 38 页</p>
+    <div class="chips">
+      <span class="chip hot">系统 / 平台</span>
+      <span class="chip">事件流 · 沙箱 · 可插拔</span>
+      <span class="chip">与本课题关联 ★★★★★</span>
+      <span class="chip">精读用时 ≈ 20 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>它没有提出更强的算法，而是把"智能体怎么跑、怎么记、怎么换"变成可复用的基础设施——状态 = 事件流 + 成本 + 委派元数据（原文 p.3），同一份事件流同时喂给提示词、前端和评测。</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>前两篇分别定义了"考什么"（SWE-bench）和"怎么交互"（SWE-agent）。OpenHands 问的是第三个问题：这些东西怎么才能被别人复用？它把智能体拆成三层——策略（agent）、状态（事件流）、执行（Docker 沙箱），三者通过一个只追加的事件流串起来。结果是：换 agent 不用改沙箱，换模型不用改评测，同一份轨迹同时供下一轮提示词、前端界面和打分脚本使用。</p>
+  </div>
+
+  <p>它的定位是基础设施而非方法：32K GitHub star、188 位贡献者、2.1K 次提交（原文 p.3），15 个基准（原文 p.6）。对本课题最有用的一点：<strong>它的"事件流"就是"统一事件表示"的工业级版本</strong>，而它缺的那一层——把事件按"任务"组织起来——正是本课题要补的。</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>正文重点读 §2.1（状态与事件流）、§2.3（AgentSkills 收录标准）、§4（评测）。表 1 是框架对比清单，看结论前先想清楚它比的是什么。附录 D 讲 UI 怎么接事件流，附录 E 讲怎么给智能体写集成测试，做系统时比正文更有用。</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>2023—2024 年的代码智能体论文几乎每篇都自带一套脚手架：自己的提示词、自己的工具函数、自己的日志格式、自己的评测脚本。后果是三个：换一个模型要重写一遍；两个人报的同一个基准分数不可比，因为工具集与截断策略都不同；<strong>轨迹只被当成调试日志</strong>，跑完就丢，谁也没法拿它做二次分析。</p>
+
+  <p>所以问题不是"再做一个更强的 agent"，而是"能不能让 agent 变成可替换的零件"。</p>
+
+  <div class="vs">
+    <div><h4>论文式实现</h4><ul>
+      <li>agent 与执行环境耦合，换沙箱要改 agent</li>
+      <li>轨迹打印到 stdout，格式各写各的</li>
+      <li>评测脚本绑死某个 agent 的接口</li>
+      <li>人无法中途介入</li>
+    </ul></div>
+    <div><h4>平台式实现</h4><ul>
+      <li>三层分离：策略 / 状态 / 执行（原文 p.3—p.4）</li>
+      <li>状态是显式事件流，可回放、可序列化</li>
+      <li>同一套评测跑 15 个基准（原文 p.6）</li>
+      <li>用户可随时打断并补充指令（原文 p.6）</li>
+    </ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>不是造一台更快的车，而是先定标准集装箱的尺寸。集装箱定下来之后，港口、货轮、卡车才能各自升级——平台的价值在于让别人不必重复造轮子。</p>
+  </div>
+</section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：三层分离与一份事件流</h2>
+  <p><strong>一句话：把智能体系统拆成"策略 / 状态 / 执行"三层，让三层之间只通过一个只追加的事件流通信。</strong>原文的定义很干脆——状态（state）封装了 agent 执行所需的全部信息，其核心是事件流：过去所有动作与观察的按时间排列的集合，既包括 agent 自己的动作，也包括用户的指令与反馈；状态里还附带累计的 LLM 调用成本与多智能体委派元数据（原文 p.3）。</p>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 408" role="img" aria-label="OpenHands 的三层结构：策略层 agent、状态层事件流、执行层 Docker 沙箱，以及同一份事件流的三个消费者">
+        <defs>
+          <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#0f766e"/></marker>
+          <marker id="ar3g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/></marker>
+        </defs>
+
+        <rect x="16" y="10" width="452" height="76" rx="10" fill="#f4f7f7" stroke="#0f766e" stroke-width="1.5"/>
+        <text x="30" y="32" font-size="12.5" font-weight="700" fill="#0f766e">① 策略层　Agent：只读 state，只产出 action</text>
+        <rect x="30" y="42" width="96" height="28" rx="6" fill="#ffffff" stroke="#9fc6c0"/>
+        <text x="78" y="60" text-anchor="middle" font-size="10.5" fill="#191c1f">CodeActAgent</text>
+        <rect x="134" y="42" width="96" height="28" rx="6" fill="#ffffff" stroke="#9fc6c0"/>
+        <text x="182" y="60" text-anchor="middle" font-size="10.5" fill="#191c1f">BrowsingAgent</text>
+        <rect x="238" y="42" width="86" height="28" rx="6" fill="#ffffff" stroke="#9fc6c0"/>
+        <text x="281" y="60" text-anchor="middle" font-size="10.5" fill="#191c1f">GPTSwarm</text>
+        <rect x="332" y="42" width="120" height="28" rx="6" fill="#ffffff" stroke="#9fc6c0"/>
+        <text x="392" y="60" text-anchor="middle" font-size="10.5" fill="#191c1f">Micro Agent</text>
+
+        <rect x="16" y="112" width="452" height="104" rx="10" fill="#e9f6f3" stroke="#0f766e" stroke-width="1.8"/>
+        <text x="30" y="134" font-size="12.5" font-weight="700" fill="#0f766e">② 状态层　Event Stream：只追加的时间序事件</text>
+        <rect x="30" y="146" width="70" height="26" rx="6" fill="#ffffff" stroke="#0f766e"/>
+        <text x="65" y="163" text-anchor="middle" font-size="10.5" fill="#191c1f">Action</text>
+        <rect x="108" y="146" width="92" height="26" rx="6" fill="#ffffff" stroke="#0f766e"/>
+        <text x="154" y="163" text-anchor="middle" font-size="10.5" fill="#191c1f">Observation</text>
+        <rect x="208" y="146" width="86" height="26" rx="6" fill="#ffffff" stroke="#0f766e"/>
+        <text x="251" y="163" text-anchor="middle" font-size="10.5" fill="#191c1f">用户消息</text>
+        <rect x="302" y="146" width="70" height="26" rx="6" fill="#ffffff" stroke="#0f766e"/>
+        <text x="337" y="163" text-anchor="middle" font-size="10.5" fill="#191c1f">成本</text>
+        <rect x="380" y="146" width="76" height="26" rx="6" fill="#ffffff" stroke="#0f766e"/>
+        <text x="418" y="163" text-anchor="middle" font-size="10.5" fill="#191c1f">委派元数据</text>
+        <text x="30" y="196" font-size="10.5" fill="#0f766e">state = 事件流 + 累计成本 + 委派信息（原文 p.3）　—— 一次写入，三处消费</text>
+
+        <rect x="16" y="240" width="452" height="86" rx="10" fill="#f4f7f7" stroke="#0f766e" stroke-width="1.5"/>
+        <text x="30" y="262" font-size="12.5" font-weight="700" fill="#0f766e">③ 执行层　Runtime：每个会话一个 Docker 沙箱</text>
+        <rect x="30" y="272" width="122" height="28" rx="6" fill="#ffffff" stroke="#9fc6c0"/>
+        <text x="91" y="290" text-anchor="middle" font-size="10" fill="#191c1f">IPythonRunCell</text>
+        <rect x="160" y="272" width="96" height="28" rx="6" fill="#ffffff" stroke="#9fc6c0"/>
+        <text x="208" y="290" text-anchor="middle" font-size="10" fill="#191c1f">CmdRun</text>
+        <rect x="264" y="272" width="118" height="28" rx="6" fill="#ffffff" stroke="#9fc6c0"/>
+        <text x="323" y="290" text-anchor="middle" font-size="10" fill="#191c1f">BrowseInteractive</text>
+        <rect x="390" y="272" width="66" height="28" rx="6" fill="#ffffff" stroke="#9fc6c0"/>
+        <text x="423" y="290" text-anchor="middle" font-size="10" fill="#191c1f">REST</text>
+
+        <line x1="242" y1="86" x2="242" y2="110" stroke="#0f766e" stroke-width="1.6" marker-end="url(#ar3)"/>
+        <text x="250" y="103" font-size="10" fill="#0f766e">action</text>
+        <line x1="242" y1="216" x2="242" y2="238" stroke="#0f766e" stroke-width="1.6" marker-end="url(#ar3)"/>
+        <text x="250" y="231" font-size="10" fill="#0f766e">执行请求</text>
+        <line x1="470" y1="270" x2="470" y2="205" stroke="#6b7280" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#ar3g)"/>
+        <text x="476" y="240" font-size="10" fill="#6b7280">observation</text>
+
+        <rect x="502" y="112" width="204" height="214" rx="10" fill="#fdfaf3" stroke="#c9a227" stroke-width="1.5"/>
+        <text x="604" y="134" text-anchor="middle" font-size="12" font-weight="700" fill="#8a6d1f">同一份事件流的三个消费者</text>
+        <rect x="516" y="146" width="176" height="44" rx="7" fill="#ffffff" stroke="#c9a227"/>
+        <text x="604" y="164" text-anchor="middle" font-size="11" fill="#191c1f">下一轮提示词</text>
+        <text x="604" y="180" text-anchor="middle" font-size="10" fill="#6b7280">按需截断/压缩后拼进上下文</text>
+        <rect x="516" y="198" width="176" height="44" rx="7" fill="#ffffff" stroke="#c9a227"/>
+        <text x="604" y="216" text-anchor="middle" font-size="11" fill="#191c1f">前端界面</text>
+        <text x="604" y="232" text-anchor="middle" font-size="10" fill="#6b7280">直接订阅事件流，可中途打断</text>
+        <rect x="516" y="250" width="176" height="44" rx="7" fill="#ffffff" stroke="#c9a227"/>
+        <text x="604" y="268" text-anchor="middle" font-size="11" fill="#191c1f">评测脚本</text>
+        <text x="604" y="284" text-anchor="middle" font-size="10" fill="#6b7280">15 个基准读同一份轨迹</text>
+        <line x1="470" y1="164" x2="500" y2="164" stroke="#c9a227" stroke-width="1.5" marker-end="url(#ar3)"/>
+
+        <rect x="16" y="346" width="690" height="46" rx="8" fill="#ffffff" stroke="#d7dbdf"/>
+        <text x="30" y="366" font-size="11" fill="#191c1f">关键收益：策略与执行解耦后，换 agent 不用改沙箱、换沙箱不用改 agent、换模型不用改评测。</text>
+        <text x="30" y="383" font-size="10.5" fill="#6b7280">代价：事件流是扁平的时间序，没有"任务"这一层（原文 p.3）——这正是本课题要补的结构。</text>
+      </svg>
+    </div>
+    <figcaption>图 1　三层结构与一份事件流。注意右下角那三个消费者：它们是"同一份数据三种用途"的直接体现，也是这个设计最值得借鉴的地方。</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p><strong>① 策略与执行分离，才能各自演进。</strong>agent 只实现 <code>reset()</code> 与 <code>step(state)</code>（原文 p.4 图 3 的 MinimalAgent 只有这两件事），执行细节全在 runtime 里。所以换一个 agent 不需要动沙箱，换一个沙箱不需要动 agent。</p>
+    <p><strong>② 状态显式化，才能一份数据三用。</strong>事件流是"过去动作与观察的按时间排列的集合"（原文 p.3）；因为它是显式数据结构，前端可直接订阅（原文 p.19）、评测可读、下一轮提示词可从它派生。若轨迹只是日志字符串，这三件事要各写一遍。</p>
+    <p><strong>③ 沙箱隔离，才能让"执行任意代码"成为可接受的风险。</strong>每个任务会话起一个隔离容器，动作在容器里执行、结果回到事件流（原文 p.4）；还支持任意基础镜像（原文 p.5）。</p>
+    <p><strong>④ 委派也是一条事件，多智能体就不用改框架。</strong><code>AgentDelegateAction</code> 让 agent 把子任务交给另一个 agent（原文 p.5），委派关系记在 state 元数据里。</p>
+  </div>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：四个部件</h2>
+
+  <ol class="steps">
+    <li><b>Agent 抽象</b>　输入是 state，输出是一个 action。约定极简：<code>reset()</code> 初始化，<code>step(state)</code> 产出下一步动作（原文 p.4 图 3）。AgentHub 里已有 CodeActAgent（默认）、Browsing Agent、GPTSwarm、Micro Agent 等实现（原文 p.6）。</li>
+    <li><b>事件流与动作类型</b>　核心动作只有三类：<code>IPythonRunCellAction</code>（跑 Python）、<code>CmdRunAction</code>（跑 bash）、<code>BrowseInteractiveAction</code>（操作浏览器），外加 <code>AgentDelegateAction</code>（委派）。选"编程语言作为动作空间"是因为它足够通用又能自我扩展（原文 p.3—p.4）。</li>
+    <li><b>Runtime 与沙箱</b>　每个任务会话起一个 Docker 容器，容器里跑一个 API server 监听动作执行请求，执行完把结果写回事件流；客户端通过 REST 通信（原文 p.4）。支持任意基础镜像，因此可以复现各种软件环境（原文 p.5）。</li>
+    <li><b>AgentSkills</b>　一个 Python 包，函数自动导入 IPython 环境，所以定义一个工具就是写一个函数。收录标准只有两条：模型自己写代码搞不定，或者需要调用外部模型（原文 p.5）。已有的 <code>edit_file</code>、<code>scroll_up</code> 等来自 SWE-agent 与 Aider 的改造（原文 p.5）。</li>
+  </ol>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　15 个基准的分布（原文 p.6 表 2）</caption>
+      <thead><tr><th>类别</th><th>数量</th><th>代表基准</th><th>考的能力</th></tr></thead>
+      <tbody>
+        <tr><td>软件工程</td><td class="num">7</td><td>SWE-bench、HumanEvalFix、BIRD</td><td>修 issue、修 bug、Text-to-SQL</td></tr>
+        <tr><td>网页操作</td><td class="num">3</td><td>WebArena、MiniWob++、GAIA</td><td>浏览、点击、填表</td></tr>
+        <tr><td>综合任务</td><td class="num">5</td><td>GPQA、AgentBench、MINT</td><td>工具调用、多步推理</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>这四块里最值得学的是第 4 条的<strong>收录标准</strong>。多数工具库的直觉是"能包就包"，这篇反过来：模型已经会用 pandas 读 CSV，就不要造一个"读 CSV 工具"。这条标准背后是一个判断——<strong>工具库的成本不是代码量，而是它占用的上下文与选择成本</strong>。这与第 02 篇 SWE-agent 的"命令少而专"是同一个道理的两种说法。</p>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：广度证明，不是能力证明</h2>
+  <p>设置：把 15 个已有基准接进同一套框架，用同一批 agent 实现跑（原文 p.6）。主结果见表 2。成本：跑完整 2,294 条约 6.9 千美元（每条 3 美元估），Lite 300 条约 600 美元（原文 p.7、p.19）。</p>
+
+  <div class="tw">
+    <table>
+      <caption>表 2　代表性结果（原文 p.7 表 3；SWE-bench 为 Lite 子集 300 条）</caption>
+      <thead><tr><th>Agent</th><th>模型</th><th>SWE-bench Lite</th><th>WebArena</th><th>GPQA</th></tr></thead>
+      <tbody>
+        <tr><td>SWE-Agent</td><td>gpt-4-1106</td><td class="num">18.0</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>Moatless Tools</td><td>claude-3.5-sonnet</td><td class="num">26.7</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>Agentless</td><td>gpt-4o</td><td class="num best">27.3</td><td class="num">—</td><td class="num">—</td></tr>
+        <tr><td>WebArena Agent</td><td>gpt-4-turbo</td><td class="num">—</td><td class="num">14.4</td><td class="num">—</td></tr>
+        <tr><td>OpenHands CodeAct v1.8</td><td>gpt-4o</td><td class="num">22.0</td><td class="num">14.5</td><td class="num">53.1</td></tr>
+        <tr><td>OpenHands CodeAct v1.8</td><td>claude-3.5-sonnet</td><td class="num">26.0</td><td class="num">15.3</td><td class="num">52.0</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>三个读法。<strong>一，它没有刷榜。</strong>SWE-bench Lite 上 26.0 低于 Agentless 的 27.3，也低于 Moatless 的 26.7（原文 p.7）；作者自己也写"可能并非每个类别都达到最好"（原文 p.7）。这不是掩饰——平台论文的目标本来就不是单点最高分。<strong>二，同一个 CodeAct agent 不改系统提示词就跨了三类任务</strong>（22.0 / 14.5 / 53.1，原文 p.7），这才是它想证明的东西：接口足够通用。<strong>三，横向比较要小心口径。</strong>HumanEvalFix 上 OpenHands 是 79.3%（0-shot），SWE-agent 是 87.7%，但后者给了 1-shot 的完整示范轨迹（原文 p.7），两者不能直接比大小。</p>
+
+  <p>还有一处易被误读：表 1 里 OpenHands 是唯一全勾的（原文 p.6），但那是按功能清单自评的表，不是实验——说明"功能齐"，不说明"效果强"。把它当"能力证据"引用，会被答辩老师抓住。</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <ul>
+    <li><b>作者自述：</b>多模态支持还不是有原则的设计；agent 仍难以完成复杂任务；<strong>长文件编辑效果差</strong>；工作流仍需大量手工搭建（原文 p.17—p.18）。</li>
+    <li><b>外部质疑：</b>15 个基准每个都只跑一两个 agent、报一个数，深度不足；表 1 的自评清单容易被当成实验证据；分数落后于专用方法时，"通用性"是解释而非证据。</li>
+    <li><b>我的判断：</b></li>
+  </ul>
+
+  <p><strong>一、平台论文的正确评测标准是可复现性，不是分数。</strong>它真正交付的是"别人能在你的基础上重跑并比较"。可惜论文没量化这一点（比如"第三方复现某篇论文，误差多少"），只在附录 E 讲了怎么给智能体写集成测试（原文 p.19）。这是平台类工作普遍缺的一块。</p>
+
+  <p><strong>二、事件流是扁平的，没有"任务"这一层。</strong>state 里只有时间序事件、成本、委派元数据（原文 p.3）。这对"跑一个任务"够用，但对本课题关心的"多个并行任务、中断后恢复、按任务查证据"不够——时间序里没有任务边界，也没有"这条事件属于哪个任务"的字段。这不是实现疏漏，而是目标不同：它服务的是"跑通并评测"，我们服务的是"回看并追溯"。</p>
+
+  <p><strong>三、安全只覆盖了"宿主隔离"。</strong>伦理部分的三条缓解措施是系统评测、人机协作、前沿安全研究（原文 p.18）；沙箱解决了"会不会弄坏我的机器"，没解决"轨迹里会不会留下不该留的密钥与隐私"。采集端照抄它的存储方式，会把这个问题一起抄进来。</p>
+</section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p>开题报告「二、2（三）系统总体架构」的四层划分可以直接对标本篇的三层：它的 Runtime 对应采集端，Event Stream 对应事件存储，Agent 对应被观测对象。更重要的是「二、2（四）关键设计」里写了"事件 JSON 参考 OpenTelemetry GenAI 语义约定"——本篇的事件流就是现成的参照物，可以引它来说明"为什么事件要按动作/观察成对记录、为什么要带成本与委派信息"。</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p><strong>事件流的字段组织方式。</strong>研究内容（1）可照它的思路：一条事件 = 类型 + 动作载荷 + 观察载荷 + 时间戳 + 成本 + 归属。再加 <span class="term">taskId</span> 与 <span class="term">hunkId</span> 两个字段，就把扁平时间序升级成了任务视图——这是本课题的核心增量。</p></div>
+    <div class="card"><h4>要避开</h4><p><strong>不要把"功能清单"当创新点。</strong>表 1 那种"我全都有"的对比在开题报告里说服力很低。创新点应落在"事件 → 任务"的组织方法与双向溯源查询上，而不是"我们也做了时间线界面"。</p></div>
+    <div class="card"><h4>不能支撑</h4><p><strong>它没有反向查询。</strong>事件流支持"从事件往下看"，但"从代码反查为什么被改"需要 diff 坐标到事件的反向索引，本篇没有。它也没有任务续接：中断后靠把整条历史重新喂给模型，而不是"进展摘要 + 未完成项"。</p></div>
+  </div>
+
+  <p><strong>对应到哪个模块。</strong>研究内容（2）可照它的 runtime 设计——"动作在隔离环境执行、结果写回事件流"是最干净的分层；研究内容（3）需要它的动作—观察配对作骨架，但要补"哪个 hunk 由哪次动作产生"的映射；研究内容（4）的时间线视图几乎就是它前端订阅事件流的做法，任务中心与证据侧栏才是要新建的。</p>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+
+  <blockquote>
+    <p>A key component of this state is the event stream, which is a chronological collection of past actions and observations, including the agent's own actions and user interactions.</p>
+    <p>这个状态的核心组件是事件流——过去所有动作与观察按时间排列的集合，既包括智能体自己的动作，也包括用户的交互。</p>
+    <span class="src">— 原文 p.3</span>
+  </blockquote>
+
+  <blockquote>
+    <p>We only add a new skill when: (1) it is not readily achievable for LLM to write code directly, and/or (2) it involves calling an external model.</p>
+    <p>我们只在两种情况下新增一个技能：模型自己写代码不容易做到，或者它需要调用外部模型。</p>
+    <span class="src">— 原文 p.5</span>
+  </blockquote>
+
+  <blockquote>
+    <p>While OpenHands agents may not achieve top performance in every category, they are designed with generality in mind.</p>
+    <p>OpenHands 的智能体也许并非在每个类别上都最强，但它们的设计以通用性为出发点。</p>
+    <span class="src">— 原文 p.7</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>事件流 <span class="term">event stream</span></dt>
+    <dd>按时间排列、只追加的动作与观察序列，外加用户消息。它是 agent 状态的主体，也是前端与评测的共同数据源。</dd>
+    <dt>状态 <span class="term">state</span></dt>
+    <dd>事件流 + 累计成本 + 多智能体委派元数据 + 执行参数（原文 p.3）。</dd>
+    <dt>运行时 <span class="term">runtime</span></dt>
+    <dd>执行动作的一侧：每会话一个 Docker 沙箱 + 容器内 API server + REST 客户端。</dd>
+    <dt>AgentHub</dt>
+    <dd>社区贡献的 agent 实现集合，可作基线也可直接使用（原文 p.6）。</dd>
+    <dt>AgentSkills</dt>
+    <dd>工具库。收录标准只有两条，核心是"模型能自己写代码搞定的就不包"。</dd>
+    <dt>委派 <span class="term">delegation</span></dt>
+    <dd>用 <code>AgentDelegateAction</code> 把子任务交给另一个 agent，如把浏览任务交给 BrowsingAgent（原文 p.5）。</dd>
+    <dt>Micro Agent</dt>
+    <dd>复用通用 agent 大部分实现、只换提示词的专用 agent，用来降低社区贡献门槛（原文 p.6）。</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>如果只允许从这篇里拿一个设计，你拿什么？</summary><p>事件流作为唯一状态源：提示词从事件派生、界面订阅事件、评测读事件。本课题的"统一事件表示"可直接采用这个立场，只是要在事件上挂任务归属。</p></details>
+    <details><summary>为什么它的分数不是最高的，却最有影响力？</summary><p>因为它降低了别人的成本。专用方法（Agentless、Moatless）单点更强，但你没法在它们之上做新实验；它提供的是"能改的底座"。影响力与分数不在同一个坐标系。</p></details>
+    <details><summary>事件流能直接拿来当"变更溯源"的数据模型吗？</summary><p>不能直接。它记录"发生了什么动作"，而溯源要回答"这段代码为什么变成这样"——需要把动作映射到 hunk、把 hunk 映射到触发它的消息与验证它的测试。这三次映射正是研究内容（1）（3）要做的。</p></details>
+    <details><summary>它的成本数据对本科课题有什么参考价值？</summary><p>有：600 美元跑一次 Lite（原文 p.19）说明"评测本身要花钱"。本课题用 6—8 个任务、4—5 名受试者，规模小得多，但同样应预算并记录 LLM 成本，否则"可复现"是空话。</p></details>
+  </div>
+</section>
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="02-swe-agent.html"><span class="dir">← 上一篇</span>SWE-agent</a>
+    <a href="04-codeact.html" style="text-align:right"><span class="dir">下一篇 →</span>CodeAct</a>
+  </div>
+</div>
+
+<footer>
+  《把智能体做成平台：OpenHands 的事件流、沙箱与可插拔 agent》精读笔记 · 基于 ICLR 2025 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

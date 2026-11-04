@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>让每一次脚本执行都留下可查询的案发现场｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="c">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>第 07 篇 · noWorkflow</span></div>
+    <h1>让每一次脚本执行都留下可查询的"案发现场"</h1>
+    <p class="en">noWorkflow: a Tool for Collecting, Analyzing, and Managing Provenance from Python Scripts</p>
+    <p class="byline"><strong>João Felipe Pimentel et al.</strong> · PVLDB（VLDB Endowment）2017 · 原文 4 页</p>
+    <div class="chips">
+      <span class="chip hot">工具（演示论文）</span>
+      <span class="chip">执行溯源</span>
+      <span class="chip">与本课题关联 ★★★★☆</span>
+      <span class="chip">精读用时 ≈ 15 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>把"一次执行"而不是"一次提交"当作版本单位，用 AST 加运行时探针无侵入地记下定义、环境与执行三层溯源，落进内容寻址的本地库，于是"为什么这次结果不一样"从一段回忆变成一个可以写 SQL 查出来的问题。</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>你写了个 Python 脚本跑实验，前后跑了十几遍。某一天发现第 13 遍的图和第 4 遍的不一样，可你记不清当时改了哪一行、装了哪个版本的 numpy、那个输入文件有没有被别的脚本覆盖过。git 只能告诉你"代码文本变成了什么"，答不了"这一次执行为什么产生这个结果"。noWorkflow 的解决办法极轻：把 <span class="term">python experiment.py</span> 换成 <span class="term">now run experiment.py</span>，脚本一行不用改，它就把这次执行涉及的<strong>定义</strong>（脚本结构）、<strong>部署</strong>（环境与库版本）、<strong>执行</strong>（函数激活、变量、文件读写）三层溯源全部记下来，存进脚本目录下的 <span class="term">.noworkflow</span>，之后可以用 SQL、Prolog 或网页界面事后追问、跨次比较，甚至把某一次执行的文件状态整个还原（原文 p.1–p.3）。</p>
+  </div>
+
+  <p>要理解它站在哪儿，得先看它出现之前溯源领域的两条老路。第一条是<strong>操作系统级</strong>溯源（如 Provenance-Aware Storage Systems、BUrrIto）：通用、语言无关、完全自动，但采到的信息"难以推理、难以对上实验本身的语义"（原文 p.1）。第二条是<strong>工作流管理系统</strong>（WFMS，如 VisTrails）：科学家先把自己的实验写成工作流，溯源就天然贴合实验语义，代价是学习曲线陡、采纳成本高、失去通用语言的灵活性——所以"很多科学家仍然在用脚本"（原文 p.1）。noWorkflow 选的是中间那条缝：<mark>保留脚本的自由，但把"执行"提升为一等公民</mark>。它上承 PROV 一脉的溯源传统，往下被同一课题组继续扩展到交互式 notebook，并与 YesWorkflow 联动把"预期溯源"和"回顾溯源"接起来（原文 p.1）。对本课题而言，它是"无侵入采集 + 事后可查询"这条技术路线最干净的一个样板。</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>这是 4 页的演示（demo）论文，不要按"方法论文"的读法找实验章节——它没有。正确顺序：先看第 2 页的 Figure 1（三层架构），再顺着第 3 节的降水数据演示读一遍，你会看到 trial 编号、dataflow 图、activation 图、diff、restore 依次出场；最后回到第 4 页的结论看它自己承认没采什么。第 4 页后半是参考文献，可以跳过。</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>想象一个真实场景：研究者接到合作者请求，要验证"里约热内卢的降水量是否逐年稳定"。她从气象数据库取数据，写了脚本读 <span class="term">p13.dat</span> 与 <span class="term">p14.dat</span>，按月求和，画柱状图存成 <span class="term">out.png</span>（原文 p.2，Figure 2）。这个脚本会跑很多遍：加 2012 年的数据、剔除异常雨天重跑、换成 2015 年的数据再跑。麻烦不在写代码，而在于<strong>事后无法重建"那一次"</strong>——哪次用了哪些输入、当时 matplotlib 是 2.0.0 还是别的版本、图里那根柱子为什么比记忆里高。</p>
+
+  <p>原文把这件事的难点拆得很清楚（p.2）：第一，<strong>粒度难选</strong>，粗粒度会藏掉关键数据，细粒度会淹没用户；第二，脚本里有控制流和循环，"究竟是脚本的哪一部分贡献了这个数据产物"并不显然；第三，脚本跑在不受控的环境里，光看结果无法区分是代码变了还是环境变了。而当时已有的脚本级溯源工具，多数<strong>只针对单次执行（single trial）</strong>，于是它们采集不到检验可重复性所需的信息、不支持数据复用、也管不了实验的演化（原文 p.1）。这句话是整篇论文的靶心。</p>
+
+  <div class="vs">
+    <div><h4>之前的做法</h4><ul>
+      <li>OS 级溯源：全自动、语言无关，但语义对不上实验意图</li>
+      <li>工作流系统：语义精确，但要重写实验、学习成本高</li>
+      <li>脚本级工具：多数只记一次执行，无法比较、无法复用、无法管演化</li>
+      <li>版本控制：只记代码文本的差异，不记环境与执行</li>
+    </ul></div>
+    <div><h4>这篇的做法</h4><ul>
+      <li>三类溯源一起采：定义、部署、执行</li>
+      <li>以 trial（一次执行）为版本单位，可 diff、可 restore</li>
+      <li>内容按 SHA1 寻址，同一内容只存一份</li>
+      <li>事后可查询：SQL、Prolog 传递闭包、图形化 dataflow / activation</li>
+    </ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>git 像病历上写的"诊断结论"——它忠实记录处方被改成了什么，但不会记录这次手术是怎么做的、用了哪一批批号的药、术中血压是多少。noWorkflow 补的是后者：一台全程录像机加一份术中清单。两者不冲突，只是回答的问题不同：git 回答"代码现在长什么样"，noWorkflow 回答"这次结果是怎么来的"。这也是为什么原文最后要专门说一句"与标准版本控制系统不同，noWorkflow 的版本关联的是 trial 执行"（原文 p.4）。</p>
+  </div>
+</section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：一句话与一张图</h2>
+  <p><strong>一句话：</strong>用静态分析给源码里的每个可执行位置发一个"身份证"，再用运行时探针把发生的事挂到这些身份证上，全部按内容哈希存进本地库，于是"事后追问"变成在同一张图上的遍历。</p>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 350" role="img" aria-label="noWorkflow 三层溯源采集与事后查询的结构示意">
+        <defs><marker id="a7" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/></marker></defs>
+
+        <rect x="20" y="16" width="176" height="52" rx="9" fill="#ffffff" stroke="#a16207" stroke-width="1.4"/>
+        <text x="108" y="38" text-anchor="middle" font-size="12.5" fill="#191c1f">脚本 + Python AST</text>
+        <text x="108" y="56" text-anchor="middle" font-size="11.5" fill="#6b7280">静态结构 → 位置身份</text>
+
+        <rect x="20" y="82" width="176" height="52" rx="9" fill="#ffffff" stroke="#a16207" stroke-width="1.4"/>
+        <text x="108" y="104" text-anchor="middle" font-size="12.5" fill="#191c1f">环境探测</text>
+        <text x="108" y="122" text-anchor="middle" font-size="11.5" fill="#6b7280">os / platform / modulefinder</text>
+
+        <rect x="20" y="148" width="176" height="52" rx="9" fill="#ffffff" stroke="#a16207" stroke-width="1.4"/>
+        <text x="108" y="170" text-anchor="middle" font-size="12.5" fill="#191c1f">运行时探针</text>
+        <text x="108" y="188" text-anchor="middle" font-size="11.5" fill="#6b7280">Profiler 默认 / Tracer 细粒度</text>
+
+        <line x1="200" y1="42" x2="268" y2="42" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a7)"/>
+        <line x1="200" y1="108" x2="268" y2="108" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a7)"/>
+        <line x1="200" y1="174" x2="268" y2="174" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a7)"/>
+
+        <rect x="274" y="16" width="200" height="52" rx="9" fill="#fbf1dc" stroke="#a16207" stroke-width="1.4"/>
+        <text x="374" y="38" text-anchor="middle" font-size="12.5" fill="#191c1f">定义溯源 definition</text>
+        <text x="374" y="56" text-anchor="middle" font-size="11.5" fill="#6b7280">函数 / 调用 / 参数 / 全局变量</text>
+
+        <rect x="274" y="82" width="200" height="52" rx="9" fill="#fbf1dc" stroke="#a16207" stroke-width="1.4"/>
+        <text x="374" y="104" text-anchor="middle" font-size="12.5" fill="#191c1f">部署溯源 deployment</text>
+        <text x="374" y="122" text-anchor="middle" font-size="11.5" fill="#6b7280">OS / Python 版本 / 库依赖闭包</text>
+
+        <rect x="274" y="148" width="200" height="52" rx="9" fill="#fbf1dc" stroke="#a16207" stroke-width="1.4"/>
+        <text x="374" y="170" text-anchor="middle" font-size="12.5" fill="#191c1f">执行溯源 execution</text>
+        <text x="374" y="188" text-anchor="middle" font-size="11.5" fill="#6b7280">激活 / 变量赋值 / 文件读写</text>
+
+        <rect x="496" y="60" width="204" height="96" rx="10" fill="#e7f5f2" stroke="#0f766e" stroke-width="1.4"/>
+        <text x="598" y="86" text-anchor="middle" font-size="12.5" fill="#191c1f">.noworkflow/</text>
+        <text x="598" y="106" text-anchor="middle" font-size="11.5" fill="#191c1f">关系库：结构化事件</text>
+        <text x="598" y="124" text-anchor="middle" font-size="11.5" fill="#191c1f">内容库：文件 / 模块副本</text>
+        <text x="598" y="142" text-anchor="middle" font-size="11.5" fill="#6b7280">按 SHA1 命名，去重</text>
+
+        <line x1="476" y1="108" x2="492" y2="108" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a7)"/>
+        <line x1="476" y1="42" x2="486" y2="42" stroke="#6b7280" stroke-width="1.5"/>
+        <line x1="486" y1="42" x2="486" y2="108" stroke="#6b7280" stroke-width="1.5"/>
+        <line x1="476" y1="174" x2="486" y2="174" stroke="#6b7280" stroke-width="1.5"/>
+        <line x1="486" y1="174" x2="486" y2="108" stroke="#6b7280" stroke-width="1.5"/>
+
+        <line x1="374" y1="202" x2="374" y2="232" stroke="#6b7280" stroke-width="1.5"/>
+        <line x1="108" y1="202" x2="108" y2="232" stroke="#6b7280" stroke-width="1.5"/>
+        <line x1="108" y1="232" x2="370" y2="232" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a7)"/>
+
+        <rect x="20" y="240" width="680" height="44" rx="9" fill="#f0ece3" stroke="#a16207" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="360" y="258" text-anchor="middle" font-size="12" fill="#191c1f">事后查询层：把"发生了什么"变成"可以问什么"</text>
+        <text x="360" y="275" text-anchor="middle" font-size="11.5" fill="#6b7280">SQL 直查 · Prolog 传递闭包（access_influence）· dataflow 图 · activation 图 · diff · restore</text>
+
+        <text x="600" y="30" text-anchor="middle" font-size="11" fill="#a16207">一次执行 = 一个 trial</text>
+        <line x1="530" y1="36" x2="530" y2="56" stroke="#a16207" stroke-width="1.2" stroke-dasharray="3 3"/>
+      </svg>
+    </div>
+    <figcaption>图 1　三层溯源各自采集什么、汇到哪里、最终支持哪几类追问。关键在中间那列：静态的"位置身份"与运行时的"事件"在这里对齐，后面所有查询才成立。</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p><strong>为什么这样设计就 work？</strong>拆成四个因果环节看，每一环都在补上一个环留下的坑。</p>
+    <p><strong>① 静态锚点让运行时事件"有地方可挂"。</strong>运行时日志天然只有时间戳和值，没有语义位置。noWorkflow 先分析 AST 与字节码（原文 p.2），把函数定义、调用、参数这些结构固定下来，运行时发生的激活才有一个稳定的落点。这是"能查"的前提——否则你只能得到一串流水。</p>
+    <p><strong>② 内容寻址让"跨次比较"变廉价。</strong>所有被访问的文件、模块、脚本都按内容的 SHA1 复制进内容库，哈希同时充当关系库里的外键（原文 p.2）。同一份内容只存一次，于是"两次 trial 的输入是否相同"退化成"两个哈希是否相等"，diff 和 restore 才不需要重算整个工作目录。</p>
+    <p><strong>③ 以 trial 为版本单位，让演化有了坐标系。</strong>版本控制的版本单位是"人主动提交的代码状态"，而实验的因果单位是"一次执行"。换成 trial 之后，diff（比较两次执行）、restore（回到某次执行前的文件状态）、history（trial 之间的派生关系）三个操作都落在同一个数据模型上，不需要额外的机制（原文 p.3–p.4）。</p>
+    <p><strong>④ 粒度可调，把"记全"与"能用"的矛盾变成旋钮。</strong>默认用 Profiler 采函数激活、全局变量、参数与返回值；要更细就 <span class="term">now run -e Tracker</span>，额外记变量赋值与变量依赖（原文 p.2–p.3）。这就承认了一个事实：溯源没有"最优粒度"，只有"针对某个问题的合适粒度"。</p>
+  </div>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：它到底怎么做的</h2>
+  <p>按原文第 2–3 节的真实结构，它是四个部件串起来的：</p>
+
+  <ol class="steps">
+    <li><b>入口：now run 分配 trial 编号</b>输入是一个完全不需要修改的 Python 脚本；动作是替换解释器入口，先分配一个顺序递增的 trial 编号，再依次采集定义溯源、部署溯源，最后执行脚本并采集执行溯源；输出是磁盘上 <span class="term">.noworkflow</span> 目录里的一次完整记录（原文 p.2）。原文特别强调它能"运行完全相同的脚本并产生相同结果"，这是"无侵入"最硬的证据。</li>
+    <li><b>采集：三类溯源用三套技术</b>定义溯源靠 AST 与字节码分析，脚本文件与函数定义进内容库，函数名、调用、参数、全局变量进关系库；部署溯源靠 <span class="term">os</span>、<span class="term">socket</span>、<span class="term">platform</span>、<span class="term">modulefinder</span> 采操作系统、主机名、架构、Python 版本、环境变量，以及库依赖的传递闭包及其版本；执行溯源靠 Profiler（默认）或 Profiler 加 Tracer（细粒度），并在读写文件前后各复制一份文件内容进内容库（原文 p.2）。</li>
+    <li><b>存储：一个目录两个库</b>结构化数据进关系库，文件类数据进内容库，二者用 SHA1 哈希串起来，同时避免相同文件重复存储（原文 p.2）。这个设计很小，但决定了后面所有查询能不能写成一句 SQL。</li>
+    <li><b>分析：把数据翻译成五种看法</b>命令行文本视图（<span class="term">now show</span>）、dataflow 图（<span class="term">now dataflow 1</span>，导出 dot 再渲染）、activation 图（节点是激活，颜色按耗时渐变，红最慢白最快）、trial 间 diff（<span class="term">now diff 1 2</span>）、以及 restore 与 history（<span class="term">now restore 1</span> 会先造一个 backup trial 再还原文件）（原文 p.3–p.4）。</li>
+  </ol>
+
+  <h3>值得单独讲的细节：查询为什么需要 Prolog</h3>
+  <p>既然数据在关系库里，为什么还要导出成 Prolog 事实？原文给的理由很具体：复杂查询需要<strong>传递闭包</strong>，而部分数据库系统对递归查询的支持有限（原文 p.3）。于是它把 trial 的溯源导出成 Prolog 事实，并可选导出预定义规则。论文举的例子是 <span class="term">access_influence(1, File, 'out.png')</span>——"trial 1 里哪些文件可能影响了 out.png 的生成"，答案回到 <span class="term">p13.dat</span> 与 <span class="term">p14.dat</span>（原文 p.3）。<mark>这正是"证据链"最原始的形态：从一个产物反向走到它的输入，而且这个"走"是自动的、可重复的。</mark></p>
+
+  <div class="callout warn">
+    <span class="tag">容易误读</span>
+    <p>别把它读成"一个更聪明的日志工具"。日志是<strong>写给人看的顺序流水</strong>，读完就完了；noWorkflow 产出的是<strong>可被查询的图结构</strong>——同一个数据集既能渲染成 dataflow 图，也能被 SQL 过滤、被 Prolog 递归遍历。这个差别决定了它能不能回答"为什么"，而不只是"发生了什么"。另一个常见误读是把它当成 git 的替代品：它不记录分支与合并，也不管多人协作，它只关心单机上一次次的执行。</p>
+  </div>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：数字说明什么</h2>
+  <p>先说清楚性质：这是 PVLDB 的<strong>演示论文</strong>，全文 4 页，第 3 节是一个走查式的演示场景，<strong>没有对照组、没有基准、没有任何性能数字</strong>。所以这一节我不给"提升多少"，只把演示里可核对的事实列出来，并说明它们各自证明了什么。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">3</div><div class="k">类溯源：定义 / 部署 / 执行（p.2）</div></div>
+    <div class="stat"><div class="v">2</div><div class="k">种采集粒度：Profiler 默认 / 加 Tracer（p.2）</div></div>
+    <div class="stat"><div class="v">2</div><div class="k">种查询语言：SQL 与 Prolog（p.3）</div></div>
+    <div class="stat"><div class="v">3</div><div class="k">种交互入口：命令行 / IPython 扩展 / 网页可视化（p.2）</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　演示场景（降水数据分析）中三类溯源实际采到了什么</caption>
+      <thead><tr><th>溯源类型</th><th>采集技术</th><th>演示中的具体记录</th><th>存放位置</th></tr></thead>
+      <tbody>
+        <tr><td>定义 definition</td><td>AST + 字节码分析（p.2）</td><td>脚本 <span class="term">experiment.py</span> 及函数调用 <span class="term">arange</span>、<span class="term">read</span>、<span class="term">sum_by_month</span>、<span class="term">create_bargraph</span></td><td>脚本进内容库，调用与函数名进关系库</td></tr>
+        <tr><td>部署 deployment</td><td>os / socket / platform / modulefinder（p.2）</td><td>Ubuntu 16.04、x86 64、Python 3.5.2；numpy 1.11.3、precipitation.py 1.1.0、matplotlib 2.0.0</td><td>环境进关系库，库文件进内容库</td></tr>
+        <tr><td>执行 execution</td><td>Profiler，可选叠加 Tracer（p.2–p.3）</td><td><span class="term">p13.dat</span>、<span class="term">p14.dat</span>、<span class="term">out.png</span> 的读写前后副本；<span class="term">months</span> 的取值 [1…12]（细粒度）</td><td>文件副本进内容库，激活与变量进关系库</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>演示真正想让人看到的是<strong>跨 trial 的三个动作</strong>。其一，<span class="term">now diff 1 2</span> 做文本比较——原文特别说明它目前只比较 trial 的基本信息（参数、时长）、模块与环境变量（p.3）；要看执行溯源的差异得用网页可视化 <span class="term">now vis</span>，它并排给出两次 trial 的 activation 图 diff，加进 2012 年数据后 trial 2 的图里出现了 trial 1 没有的 <span class="term">sum_by_month</span> 节点（原文 p.3，Figure 4）。其二，<span class="term">now restore 1</span>：合作者要求剔除异常雨天重跑，她直接把 trial 1 的代码与数据还原回来；因为代码已经改过，这个命令会先造一个 backup trial（编号 3）再还原（原文 p.3）。其三，trial 历史图里 trial 4 派生自 trial 1、trial 3 以另一种颜色标为 backup（原文 p.4，Figure 5）。</p>
+
+  <p>这三个动作分别对应"可比较""可重放""可解释演化"。它们不是性能提升，而是<strong>能力的有无</strong>——在没有这类工具时，这三件事只能靠人记笔记。至于开销，必须诚实说：<strong>原文没有给出任何采集开销的量化数据</strong>，只在 p.3 定性承认"细粒度采集或大循环会让溯源体积显著增长"，并给出三个减量旋钮：限制采集栈的最大深度、把计算密集的函数挪到外部文件（默认只采主脚本的执行溯源）、给变量或函数名加下划线前缀表示不采（原文 p.3）。如果你要在论文里写"noWorkflow 的开销是多少"，这里没有可引的数字。</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <p>分三层看，越往后越是我自己的判断。</p>
+  <ul>
+    <li><b>作者自述：</b>它<strong>不直接</strong>采集网络活动与数据库访问，只记录为此调用的函数（原文 p.4）；细粒度采集会让数据量显著增长，只能靠三个旋钮压（p.3）；此外它明确是 Python 专用，且默认只采主脚本的执行溯源。</li>
+    <li><b>外部质疑（体裁层面）：</b>演示论文没有评估章节，也没有用户研究。它在 4 页里证明的是"这件事能做成、做出来长这样"，而不是"它比别的方式更好"。同一课题组的后续工作（notebook 扩展、与 YesWorkflow 的联动）才是逐步补证据的地方——引用时必须把这条界线画清楚，否则就是把设计主张当成有效性证据。</li>
+    <li><b>我的判断一：粒度选错了场景就是负资产。</b>它默认采到"变量赋值与变量依赖"这一级（p.3），这在科学计算里合理，因为变量就是实验的中间产物。但本课题的对象是代码智能体的会话：代码在沙箱里被执行，你能拿到的稳定证据是工具调用、文件快照与测试结果，<strong>变量值既拿不到也不重要</strong>。照搬变量级溯源会得到一个采集不到、存不下、也没人查的字段。</li>
+    <li><b>我的判断二：可迁移的是数据模型，不是采集技术。</b>AST 变换要求"能拿到源码、且是 Python、且在同一个解释器里跑"，这三条在智能体场景一条都不成立（模型可能整文件重写、可能是 TypeScript、跑在容器里）。真正能搬过来的是它那套<strong>把"产物—活动—输入"组织成可遍历图</strong>的思路，以及"内容哈希当主键"这个工程决定。</li>
+    <li><b>我的判断三：内容寻址的代价被轻轻带过了。</b>每个 trial 都存被访问文件的副本，磁盘占用随 trial 数线性增长；去重只在"内容完全相同"时生效，而实验里最常发生的恰恰是"内容改了一点点"。原文只说"可能显著增长"（p.3），没给增长曲线，也没给清理策略。真要用在长期运行的环境里，这是必须先回答的工程问题。</li>
+  </ul>
+</section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p><strong>引在哪：</strong>开题报告"一、2（三）过程溯源与证据链"已经把它作为"把脚本执行捕获为可查询溯源图"的代表引作 [35]，可以直接沿用；"二、1（三）研究内容（4）变更溯源与证据链"在讲 hunk 粒度的证据链时，可以引它来说明"证据链不是本课题首创，但对象与粒度不同"。<strong>对应哪个模块：</strong>研究内容第 ③ 块"变更溯源与证据链"里的<strong>变更卡片</strong>，本质是它 <span class="term">access_influence</span> 查询的 hunk 版——把"哪些文件影响了这个产物"换成"哪条指令、哪次工具调用、哪次测试运行支撑了这个 hunk"；研究内容第 ④ 块"任务快照与任务续接"里的<strong>检查点（Checkpoint）</strong>，与它的 trial / restore / history 是同构的。</p>
+    <p>本篇对应的是四个核心问题里的<strong>溯源断裂</strong>：从一段代码反查它的触发来源与验证依据。同簇另两篇各补一角——MSR 综述给出"数据源分散、跨源无链接"的问题地图（对应<strong>信息分散</strong>），中断恢复研究给出"上下文丢失有多贵"的实证（对应<strong>上下文丢失</strong>）。三篇合起来，正好是本课题四个核心问题中三个的文献底座。</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p>"以执行/任务为版本单位"这个决定。它把 diff、restore、history 三个操作统一在一个数据模型上；本课题用 Task 代替 trial，就能让"任务时间线""任务快照""任务续接"共享同一套查询。</p></div>
+    <div class="card"><h4>可对照</h4><p>它的三层溯源（定义/部署/执行）可以当作本课题事件模型的完备性检查表：本课题的八类实体里，"部署"这一层几乎空缺——只记了工具调用，没记运行环境与依赖版本。这是一个可以在论文里如实写出的设计取舍。</p></div>
+    <div class="card"><h4>要避开</h4><p>不要照搬 AST 变换做采集，也不要把"变量级溯源"写进需求。本课题的采集端是黑盒事件流，能保证的是"事件 + 快照 + 哈希"，不是解释器内部的变量状态。</p></div>
+  </div>
+
+  <p><strong>它不能支撑什么：</strong>第一，不能支撑"证据链能提升开发者理解或缩短恢复时间"——它没有任何用户研究，这个结论必须由本课题自己的 M7/M8 实验给出。第二，不能支撑跨工具、跨语言、跨进程的采集，它连 Python 之外的脚本都不管。第三，不能支撑"用大模型生成摘要并绑定证据"，它没有 LLM 环节，其"可查询"是人写 SQL 或 Prolog 去查的，与本课题"模型自动生成、结论须可回溯"是两种不同的可信性策略。第四，不能支撑"任务边界判定"——它的 trial 边界由"用户执行了一次 <span class="term">now run</span>"这个动作显式给定，而本课题的 Task 边界恰恰是待判定的问题（RQ5）。<mark>换句话说：它替本课题解决了"记下来之后怎么问"，没解决"怎么记才不用改代码"和"边界在哪里"。</mark></p>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+  <p>四句话，分别对应它的靶心、它的无侵入主张、它的粒度困境和它与 git 的差别。</p>
+
+  <blockquote>
+    <p>While some tools collect provenance automatically, most focus on a single trial (i.e., a single execution of an experiment). As a result, these tools do not collect the information required to check for repeatability, do not support data re-use, and they are unable to manage experiment evolution.</p>
+    <p>虽然有些工具能自动采集溯源，但它们大多只针对单次试验（即实验的一次执行）。因此这些工具采集不到检验可重复性所需的信息，不支持数据复用，也无法管理实验的演化。</p>
+    <span class="src">— 原文 p.1</span>
+  </blockquote>
+
+  <blockquote>
+    <p>noWorkflow is able to run the very same Python script and produce the same results without modifications.</p>
+    <p>noWorkflow 能运行完全相同的 Python 脚本并产生相同的结果，无需任何修改。</p>
+    <span class="src">— 原文 p.2</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Provenance size may grow considerably if it is captured at a fine granularity or even at a coarse granularity, if script contains large loops.</p>
+    <p>若以细粒度采集，甚至在脚本含大循环时以粗粒度采集，溯源体积都可能显著增长。</p>
+    <span class="src">— 原文 p.3</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Different from standard version control systems, noWorkflow versions are related to trial executions.</p>
+    <p>与标准版本控制系统不同，noWorkflow 的版本关联的是试验执行。</p>
+    <span class="src">— 原文 p.4</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>试验 <span class="term">trial</span></dt>
+    <dd>实验脚本的一次完整执行。noWorkflow 用它当版本单位，编号从 1 递增；本课题里与之最接近的概念是"开发任务"的一次执行轮次。</dd>
+    <dt>定义溯源 <span class="term">definition provenance</span></dt>
+    <dd>脚本的静态结构：函数定义、调用、参数、全局变量。相当于"程序长什么样"的权威版本。</dd>
+    <dt>部署溯源 <span class="term">deployment provenance</span></dt>
+    <dd>执行环境：操作系统、主机、架构、解释器版本、环境变量、库依赖的传递闭包及其版本。它让"结果变了"能区分是代码问题还是环境问题。</dd>
+    <dt>执行溯源 <span class="term">execution provenance</span></dt>
+    <dd>运行时的执行日志：函数激活、参数、返回值、变量赋值、文件读写。粒度由采集方式决定。</dd>
+    <dt>激活 <span class="term">activation</span></dt>
+    <dd>一次函数调用的执行实例。activation 图里一个节点就是一次激活，节点颜色按耗时从白到红渐变（原文 p.3）。</dd>
+    <dt>内容寻址 <span class="term">content addressing</span></dt>
+    <dd>按内容的 SHA1 给文件命名并存储，同一内容只存一份。哈希同时充当关系库里的外键，是跨 trial 比较的基础。</dd>
+    <dt>预期溯源与回顾溯源 <span class="term">prospective / retrospective provenance</span></dt>
+    <dd>前者是"打算怎么做"（工作流定义），后者是"实际怎么做的"（执行记录）。原文提到 YesWorkflow 与 noWorkflow 的联动正是把两者接起来（p.1）。</dd>
+    <dt>传递闭包查询 <span class="term">transitive closure query</span></dt>
+    <dd>"沿着依赖关系一直往上追"的查询，例如"哪些输入最终影响了这个产物"。原文因此把溯源导出为 Prolog 事实（p.3）。</dd>
+    <dt>还原 <span class="term">restore</span></dt>
+    <dd>把工作目录恢复到某次 trial 执行前的文件状态；因当前代码已被修改，命令会先创建一个 backup trial 保留现场（p.3）。</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>为什么它要把"版本"的单位定为一次执行，而不是一次代码提交？如果改成提交，会丢掉什么？</summary><p>提示：回到 p.1 对"单次试验工具"的批评和 p.4 对 git 的区分。一次提交可以对应多次执行（同代码跑不同输入），一次执行也可能跨多次提交（边改边跑）。以提交为单位就丢了"输入与环境的差异"，而这恰恰是实验结果变化的另一半原因。</p></details>
+    <details><summary>原文说细粒度会"淹没用户"，它给的三个减量旋钮各自牺牲了什么？</summary><p>提示：p.3 的三条——限制栈深度、把重计算函数挪到外部文件、下划线前缀。第一条丢的是深层调用的证据；第二条丢的是被挪走那部分代码的执行溯源（默认只采主脚本）；第三条把"该不该记"的判断交给了写代码的人，等于把负担转移给用户。</p></details>
+    <details><summary>如果要把它的思路用到代码智能体上，哪一层能照搬，哪一层必须换掉？</summary><p>提示：数据模型（产物—活动—输入 + 内容哈希）可以照搬，因为它是通用的；采集技术（AST 变换 + 解释器探针）必须换，因为智能体场景拿不到解释器内部状态。换掉之后要重新回答一个问题：新的"锚点"是什么？（本课题的答案是 hunk 的内容哈希加文件路径。）</p></details>
+    <details><summary>这篇没有评估，你凭什么说它"work"？</summary><p>提示：看 p.3–p.4 的演示是否闭环——从采集（三层溯源都落库）、到查询（SQL/Prolog 各自给出答案）、到操作（diff 出差异、restore 成功还原并自动留 backup）。一个工具的最小可信度证据是"演示路径上每一步都真的发生了"，而不是"比别人快多少"。但要记住这只是可行性，不是有效性。</p></details>
+  </div>
+</section>
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="06-chatdev.html"><span class="dir">← 上一篇</span>ChatDev</a>
+    <a href="08-msr-survey.html" style="text-align:right"><span class="dir">下一篇 →</span>MSR 综述与分类</a>
+  </div>
+</div>
+
+<footer>
+  《让每一次脚本执行都留下可查询的"案发现场"》精读笔记 · 基于 PVLDB 2017 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

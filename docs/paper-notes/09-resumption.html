@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>打断之后程序员靠什么把上下文捡回来｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="c">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>第 09 篇 · Resumption</span></div>
+    <h1>打断之后，程序员到底靠什么把上下文捡回来</h1>
+    <p class="en">Resumption Strategies for Interrupted Programming Tasks</p>
+    <p class="byline"><strong>Chris Parnin, Spencer Rugaber</strong> · Software Quality Journal 2011（ICPC 2009 特刊）· 原文 30 页</p>
+    <div class="chips">
+      <span class="chip hot">实证研究（观察 + 问卷）</span>
+      <span class="chip">人因 · 任务上下文</span>
+      <span class="chip">与本课题关联 ★★★★★</span>
+      <span class="chip">精读用时 ≈ 25 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>用 86 名程序员的约 1 万次会话和 414 人的问卷证明：中断后"回到上次位置"这条最省事的路只在 17% 的会话里走得通，83% 的会话必须先跳到别处找线索；而现有工具几乎不提供这些线索，恢复成本主要由人来付。</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>被打断后回来，程序员的第一件事通常不是敲键盘，而是翻文件、翻标签页、重读代码、跑一遍程序。这段"回来"到"第一次真正编辑"之间的时间，本文命名为<strong>编辑延迟（edit lag）</strong>。作者分析 86 名程序员、约 1 万次会话（其中 7 492 次有效、5 175 次含编辑）、451 万条 IDE 交互事件，再加 414 人问卷，得到两个刺眼的数字：<strong>只有 10% 的会话能在 1 分钟内恢复编辑；只有 7.5% 的会话完全不跳转就接着改</strong>（p.1、p.14、p.16）。他们据此归纳出 5 种暂停策略与 7 种恢复策略，并给出一个对工具设计者很不客气的结论：恢复几乎全靠人脑与临时线索，IDE 基本没帮上忙。</p>
+  </div>
+
+  <p>坐标系要往前推一点。中断研究本来在心理学与知识工作领域，resumption lag 以秒计，测的是"被告知继续"到"第一次点鼠标"的时间（p.3）。这篇把问题搬到编程场景，并且<strong>换了度量单位</strong>——软件开发的恢复成本是分钟级的，因为要重建的不是一个动作，而是一整套关于代码与任务的理解（p.14）。它之后，凡是主张"任务聚焦界面""变更摘要""最近编辑历史"的工具，都能在这篇里找到设计依据；而它对"开发者到底想要什么功能"的问卷（Table 16，p.25）几乎是一份现成的需求清单。对本课题来说，它是"上下文丢失"这条研究问题唯一可以直接引用的实证基础。</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>30 页里必须逐字读的是第 3 节（策略框架，p.8–p.12）、第 5 节（结果，p.15–p.21）和第 6.4 节（效度限制，p.25–p.26）。第 2 节大段讲记忆心理学，只抓"memory for goals"这一个模型（p.6），它是后面所有推断的理论支点。第 4 节的数据集表格（Table 3，p.14）是理解全部数字的前提，务必先看。参考文献占 10 页，跳过。</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>场景很具体：你正在给一个模块加功能，脑子里已经建起三层假设——这个字段从哪来、哪个调用点会受影响、待会儿要补哪个测试。这时同事来问一个问题，二十分钟后你回到座位。屏幕还是那个屏幕，可"刚才想到哪了"已经没了。原文对这种状态有个很准的描述：编程中用到的很多知识是<strong>默会的、短暂的</strong>，它没有被写下来，而且包含大量尚未在心里扎根的临时细节；更麻烦的是，程序不像小说或电视剧，<mark>没有线性叙事结构，重读最后几段并不能让你接上</mark>，相关信息散落在不同制品与位置，必须主动去找、再在脑子里重建（p.2）。</p>
+
+  <p>已有的应对手段都很弱。IDE 能提供的线索基本只有一种：把上次编辑的文件和位置留在那儿。可数据说这条路很少走得通——1 213 个会话里只有 91 个（7.5%）不跳转就改上了，209 个（17%）最终回到原方法，其余大多数会话都得先跑去别的地方（p.16）。人也想了不少土办法：写便条、留编译错误当"路障"、故意不修 TODO、把窗口摆成上次的样子。但这些办法<strong>要么费时间，要么不可靠</strong>——便条写起来慢，脱离源码就丢上下文（p.9）；留下的线索可能被后来的操作冲掉，或者 IDE 一关就没了（p.9）。</p>
+
+  <div class="vs">
+    <div><h4>之前的做法</h4><ul>
+      <li>靠"上次位置"这一种环境线索（只对 17% 的会话有效）</li>
+      <li>靠人写便条、留编译错误、摆窗口，成本高且易丢</li>
+      <li>靠记忆复述，只能维持很短时间、很少信息量</li>
+      <li>任务管理工具要求手工录入子任务，几乎没人这么干</li>
+    </ul></div>
+    <div><h4>这篇揭示的实况</h4><ul>
+      <li>83% 的会话在首次编辑前要导航到其他位置（p.22）</li>
+      <li>只有 10% 的会话能在 1 分钟内开始编辑（p.15）</li>
+      <li>9% 的会话会看任务/缺陷列表，其中 75% 编辑延迟超过 30 分钟（p.19）</li>
+      <li>只有 4% 的会话查版本历史，其中 59% 延迟超过 15 分钟（p.21）</li>
+    </ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>像侦探回到案发现场。如果现场原封不动（IDE 没关、标签页还在），你能靠物证迅速还原；如果现场被清理过，就只能靠笔记和推理。而本文最扎心的发现是：<strong>即使现场原封不动，多数时候也不够用</strong>——因为程序的空间结构太大，一个"上次停在这里"的位置线索，激活不了"我为什么停在这里"这个目标。放到今天用代码智能体的场景里更糟：会话记录是一长串文本，既没有标签页也没有滚动位置，"现场"几乎不存在。</p>
+  </div>
+</section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：一句话与一张图</h2>
+  <p><strong>一句话：</strong>恢复不是"回到上次的位置"，而是重建四类工作状态——<strong>制品、计划、目标、心智表征</strong>；重建靠线索，所以工具的切入点不是替人记忆，而是把线索做得更丰富、更有结构、更带时间信息。</p>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 330" role="img" aria-label="中断与恢复的时间线，标出中断延迟、恢复延迟与编辑延迟">
+        <defs>
+          <marker id="a9" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/></marker>
+          <marker id="a9s" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M10 0 L0 5 L10 10 z" fill="#b42318"/></marker>
+        </defs>
+
+        <text x="24" y="46" font-size="11.5" fill="#6b7280">编辑/min</text>
+        <text x="700" y="40" text-anchor="end" font-size="11.5" fill="#a16207">10% 的会话 1 分钟内恢复 · 约 30% 超过 30 分钟（p.15）</text>
+
+        <line x1="40" y1="215" x2="706" y2="215" stroke="#c9c3b6" stroke-width="1.2"/>
+        <line x1="40" y1="215" x2="40" y2="60" stroke="#c9c3b6" stroke-width="1.2"/>
+
+        <polyline points="46,215 62,168 82,140 102,122 126,106 152,98 176,86 200,89 226,73 250,68 276,62"
+                  fill="none" stroke="#a16207" stroke-width="2.2" stroke-linejoin="round"/>
+        <polyline points="282,215 424,215" fill="none" stroke="#c9c3b6" stroke-width="1.6" stroke-dasharray="5 4"/>
+        <polyline points="436,215 448,199 462,190 478,176 492,168 508,156 522,148 538,133 552,126 566,112 586,101 612,93 642,86 672,79 702,73"
+                  fill="none" stroke="#a16207" stroke-width="2.2" stroke-linejoin="round"/>
+
+        <line x1="280" y1="60" x2="280" y2="222" stroke="#6b7280" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="430" y1="60" x2="430" y2="222" stroke="#6b7280" stroke-width="1" stroke-dasharray="3 3"/>
+        <line x1="566" y1="60" x2="566" y2="222" stroke="#6b7280" stroke-width="1" stroke-dasharray="3 3"/>
+
+        <text x="152" y="52" text-anchor="middle" font-size="12" fill="#191c1f">会话 1（正在编程）</text>
+        <text x="355" y="205" text-anchor="middle" font-size="12" fill="#6b7280">中断 · 离开（无编辑活动）</text>
+        <text x="630" y="52" text-anchor="middle" font-size="12" fill="#191c1f">会话 2（恢复后）</text>
+
+        <text x="280" y="236" text-anchor="middle" font-size="11" fill="#6b7280">最后一次编辑</text>
+        <text x="430" y="236" text-anchor="middle" font-size="11" fill="#6b7280">回到任务</text>
+        <text x="566" y="236" text-anchor="middle" font-size="11" fill="#6b7280">首次编辑</text>
+
+        <line x1="430" y1="252" x2="566" y2="252" stroke="#b42318" stroke-width="1.6" marker-end="url(#a9)" marker-start="url(#a9s)"/>
+        <text x="498" y="270" text-anchor="middle" font-size="12" fill="#b42318">edit lag：本文的核心度量（p.14–p.15）</text>
+
+        <rect x="40" y="282" width="320" height="40" rx="8" fill="#f4edfd" stroke="#7c3aed" stroke-width="1.2"/>
+        <text x="200" y="298" text-anchor="middle" font-size="11" fill="#191c1f">暂停策略：复述 / 序列化（便条）</text>
+        <text x="200" y="313" text-anchor="middle" font-size="11" fill="#6b7280">/ 线索预置 / 上下文清理 / 任务脚手架</text>
+
+        <rect x="372" y="282" width="334" height="40" rx="8" fill="#e7f5f2" stroke="#0f766e" stroke-width="1.2"/>
+        <text x="539" y="298" text-anchor="middle" font-size="11" fill="#191c1f">恢复策略：回到原位 / 导航回忆 / 查任务单</text>
+        <text x="539" y="313" text-anchor="middle" font-size="11" fill="#6b7280">/ 跑程序 / 查 TODO / 看变更历史 / 看差异</text>
+      </svg>
+    </div>
+    <figcaption>图 1　一次中断的完整时间线。红色那段（edit lag）才是本文真正测量的东西——它不是"想起一件事"的几百毫秒，而是"重新具备编辑条件"的几分钟。</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p><strong>为什么"线索越强，恢复越快"这个结论成立？</strong>背后是一个认知模型，不是类比。</p>
+    <p><strong>① 记忆的目标激活模型给出因果链。</strong>该模型认为目标及其问题状态在记忆中按激活水平竞争注意力，时间流逝会让激活衰减；被打断时当前目标被挂起，恢复所需时间就反映"重新激活这个挂起目标"的过程，而<strong>环境线索可以给激活加温</strong>（p.6）。这条链推出一个可检验的预测：线索越强越具体，恢复越快。数据正好对上——当"上次编辑的方法"这个强线索可用时，35% 的会话能在一分钟内恢复；而全体会话里这个比例只有 10%（p.16、p.22）。</p>
+    <p><strong>② 线索的成本与鲁棒性成反比，所以不能只靠一种。</strong>复述几乎零成本但容量极小、只撑得住很短的中断；序列化（写便条）信息量大但写起来慢，而且"贴身处"的便条上下文足却容易被忽略，"非贴身处"的便条看得见却需要重述上下文（p.9）；线索预置几秒就能设好，但很脆弱，一次新操作或 IDE 重启就没了（p.9）。三者互补，所以真实的人总是混着用。</p>
+    <p><strong>③ 因此工具的正确位置是"自动生成结构化线索"，不是"要求人多记"。</strong>原文 6.3 节的论证很干脆：因为系统里没有关于计划、目标、中间知识的任何显式表示，开发者只能靠临时手段去触发这些记忆，而这些手段常常失败，原因是"最后工作地点所包含的线索不足"（p.24）。这句话直接指向设计：把"上次会话改了什么、哪些测试跑过、哪些 TODO 没做"自动整理出来，就是把隐含的工作状态外化成结构化线索。</p>
+  </div>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：它到底怎么做的</h2>
+  <p>这篇的方法论比结论更值得学。它没做受控实验，而是用<strong>交互历史 + 问卷</strong>两条独立证据互相印证，并把"度量定义"当成一件正经事来做。</p>
+
+  <ol class="steps">
+    <li><b>三个交互历史数据集，规模差两个数量级</b>Eclipse 数据集由 Mylyn Monitor 采集，74 名志愿者、7 927 个会话、3 937 526 条事件；Visual Studio 数据集来自某工业现场，12 名开发者、30 个工作日，1 972 个会话、573 998 条事件；UDC 是 Eclipse 基金会公开的 Usage Data Collector，覆盖 2008 年 4—12 月的一万多名 Java 开发者（p.13、p.14）。合计 86 人、9 899 个会话、4 511 524 条事件。</li>
+    <li><b>会话切分：15 分钟空闲为界</b>事件间隔服从泊松分布，451 万条事件里 98% 的相邻间隔小于 1 分钟，因此任何大于 1 分钟的阈值都能切出紧致的簇；作者选 15 分钟，并说明与既有研究一致（p.13）。<strong>这个决定很关键也很可疑</strong>——它等于把"中断"操作化定义为"空闲 15 分钟以上"，后面所有结论都建立在这个定义上。</li>
+    <li><b>定义 edit lag，只统计含编辑的会话</b>因为秒级的 resumption lag 在编程场景里量不出东西，作者改用"回到任务到第一次编辑"的时间（p.14–p.15），并只分析有编辑活动的会话（7 492 个过滤后会话中 5 175 个含编辑）。理由是要问"开始编码之前开发者做了哪些活动"，没有编码的会话就无从问起。</li>
+    <li><b>问卷：414 人、15 题，用来解释"为什么"</b>向 2 000 名全职开发者发出邀请（排除实习生、测试与项目经理等角色），最终 371 名微软员工加 43 名来自创业公司、国防、金融、游戏等企业的开发者参与；15 道固定与开放问题，问中断的代价、为中断做的准备、恢复策略、什么让恢复变难、对未来工具的期待（p.13–p.14）。</li>
+    <li><b>交叉验证：两条证据的排序是否一致</b>把日志统计出的策略使用率与问卷自报频率并排（Table 15，p.22），发现<strong>排序一致</strong>；并对每一组分布做 Kolmogorov–Smirnov 检验，除"看问题列表"与"看任务列表"这一对外，其余分布差异都显著（p&lt;0.05）（p.22）。这是全文方法上最扎实的一步。</li>
+  </ol>
+
+  <h3>值得单独讲的细节：它承认自己的度量只是上界</h3>
+  <p>edit lag 有一个绕不过去的混淆：这段时间里，人可能在做"恢复旧任务"，也可能在做"开始一个新任务"的思考，<strong>观测数据无法区分这两者</strong>（p.26）。作者的处理不是辩解，而是明确声明："在最坏情况下，本研究报告的实验数值构成一个上界"，并说明后续需要更强的方法（例如把会话与源码提交、任务库活动关联）才能分离这个效应（p.26）。同一段还承认：观察到某个活动发生在会话开头，并不等于它<em>因果地</em>用于恢复（p.26）。这种"先把度量边界画出来再报数"的写法，比数字本身更值得抄进自己的论文。</p>
+
+  <div class="callout warn">
+    <span class="tag">容易误读</span>
+    <p>别把它读成"打断就是坏事，所以工具应该消灭打断"。它测的是<strong>恢复成本</strong>，不是打断的净损益；而且它明确说"不是所有中断都是被动的"，疲劳、想反思、遇到阻塞、到达一个自然的停止点，都是主动中断（p.3）。真正的设计含义是：既然中断无法消灭，就让恢复变便宜。另一个误读是把它当成"IDE 功能评测"——它评测的是<strong>人现有的做法</strong>，不是任何工具的效果。</p>
+  </div>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：数字说明什么</h2>
+  <p>先交代口径：所有百分比的分母是"含编辑活动的会话"，不是人数；问卷百分比是加权平均（不同人自报频率差异极大，加权平均会压缩差距，作者专门提醒过，p.21–p.22）。看数之前记住这两条，否则很容易把 9% 与 43% 的差距读反。</p>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　三个交互历史数据集的规模（据原文 Table 3，p.14 重排）</caption>
+      <thead><tr><th>数据集</th><th>用户数</th><th>会话数</th><th>过滤后</th><th>含编辑</th><th>事件数</th></tr></thead>
+      <tbody>
+        <tr><td>Eclipse（Mylyn Monitor）</td><td class="num">74</td><td class="num">7 927</td><td class="num">5 931</td><td class="num">3 962</td><td class="num">3 937 526</td></tr>
+        <tr><td>Visual Studio（工业现场）</td><td class="num">12</td><td class="num">1 972</td><td class="num">1 561</td><td class="num">1 213</td><td class="num">573 998</td></tr>
+        <tr><td>UDC（Eclipse 公开数据）</td><td class="num">10 000+</td><td colspan="3">仅用于命令使用统计，不参与会话级分析</td><td class="num">—</td></tr>
+        <tr><td class="best">合计（会话级分析）</td><td class="num best">86</td><td class="num best">9 899</td><td class="num best">7 492</td><td class="num best">5 175</td><td class="num best">4 511 524</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="v">10%</div><div class="k">会话能在 1 分钟内开始编辑（p.15）</div></div>
+    <div class="stat"><div class="v">7.5%</div><div class="k">不跳转即恢复编辑（91/1213，p.16）</div></div>
+    <div class="stat"><div class="v">83%</div><div class="k">首次编辑前导航到新位置（p.22）</div></div>
+    <div class="stat"><div class="v">414</div><div class="k">问卷参与者（371 微软 + 43 外部，p.13）</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>表 2　各类活动在会话开头的出现率：日志观测 vs 问卷自报（据原文 Table 15，p.22）</caption>
+      <thead><tr><th>策略</th><th>日志（%）</th><th>问卷（%）</th><th>怎么读</th></tr></thead>
+      <tbody>
+        <tr><td>记笔记（暂停阶段）</td><td class="num">—</td><td class="num">77</td><td>最普及的应对手段，但纯手工</td></tr>
+        <tr><td>直接接着上次编辑</td><td class="num">7.5</td><td class="num">—</td><td>最省事的路，极少走得通</td></tr>
+        <tr><td>跳转后回到上次编辑</td><td class="num">17</td><td class="num">—</td><td>加上一类也只有 17%</td></tr>
+        <tr><td>导航到新位置</td><td class="num">83</td><td class="num">—</td><td>绝大多数会话都要"先找"</td></tr>
+        <tr><td>导航回忆</td><td class="num">—</td><td class="num">58</td><td>被广泛自认使用</td></tr>
+        <tr><td>查看问题列表（编译错误）</td><td class="num">9</td><td class="num">43</td><td>自报高估近 5 倍</td></tr>
+        <tr><td>查看任务/缺陷列表</td><td class="num">9</td><td class="num">42</td><td>同上；且这类会话延迟极高</td></tr>
+        <tr><td>查看版本历史</td><td class="num">4</td><td class="num">39</td><td>自报高估约 10 倍</td></tr>
+        <tr><td>执行/调试程序</td><td class="num">2 / 15</td><td class="num">33</td><td>跑 2%、调试 13%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p><strong>哪些是实质的，哪些要打折？</strong>三个数字我认为是硬的：10% 的快速恢复率、7.5% 的"不跳转"率、83% 的"必须先导航"率——它们来自三个不同数据集的一致模式，且量级悬殊到不可能是噪声（p.15、p.16、p.22）。要打折的是<strong>所有"历史/提交"类指标</strong>：作者自己说 4% 这个数字"可能偏保守"，因为并非所有用户都通过 Eclipse 插件访问版本历史，未来研究应直接测量对源码控制系统的访问（p.21）。至于问卷与日志之间 2—10 倍的差距，作者的解释是自报频率的加权平均会把极端回答压平（p.21–p.22）——换句话说，<strong>人高估了自己使用工具的程度</strong>，这对任何做问卷评估的人都适用。</p>
+
+  <p>另一个反直觉结果：查任务列表的会话只占 9%，但这些会话里 75% 的编辑延迟超过 30 分钟（p.19）；查版本历史的会话只占 4%，其中 59% 延迟超过 15 分钟（p.21）。作者的解释是"这些会话的开头可能花在探索与调查源码上，以便形成变更计划"（p.19）。<strong>延迟高不一定意味着恢复失败，也可能意味着这次任务本身更复杂。</strong>这提醒我们：任何用时间做因变量的实验，都必须控制任务难度，否则测到的是任务，不是工具。</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <p>这篇的自我批评写得相当诚实，但仍有它没看到的地方。</p>
+  <ul>
+    <li><b>作者自述（三条，都很硬）：</b>其一，edit lag 无法区分"恢复旧任务"与"开始新任务"的思考时间，所以数值在最坏情况下只是<strong>上界</strong>（p.26）；其二，观察到某活动出现在会话开头，不等于它与恢复有因果关系，同样只能算上界（p.26）；其三，数据集内部与之间的差异（导航事件粒度不同、开发者经验不同、任务类型不同）会威胁普适性，因此作者明确说"应避免据此对中断的影响作一般性断言"，只建议把结果当作基线（p.26）。</li>
+    <li><b>外部质疑（方法层面）：</b>这是观察性研究，没有对照、没有工具干预，因此它<strong>不能证明任何工具能降低恢复成本</strong>，只能指出"哪里缺支持"。另外样本以微软内部开发者为主（371/414），工作环境、代码规模、任务类型都高度特定，外推到开源或个人开发者要谨慎。</li>
+    <li><b>我的判断一：结论方向在智能体场景更强，但机制变了。</b>它测的"环境线索"主要是窗口、标签页、滚动位置、光标位置这些 IDE 状态。代码智能体的会话里，这些线索基本不存在：代码是工具改的，不是你一行行敲的；"上次光标在哪"毫无意义；对话记录虽长却是一维文本。所以"83% 的会话必须先导航找线索"在智能体场景只会更严重，而它推荐的"自动变更摘要""即时差异"恰好是唯一还成立的线索类型。这是本课题做任务快照的直接理由。</li>
+    <li><b>我的判断二：它的上界问题，本课题必须正面处理。</b>如果实验二让受试者在 B0（翻 git 日志与原始会话）与 C2（完整系统）两个条件下各做一个任务，而两个任务难度不同，那么测出的"恢复用时差"里就混着任务难度差。开题报告的应对是"条件与任务在受试者间平衡"（表 2-3 的 M7），但这只能抵消系统性偏差，不能消除单次观测的方差——n=4—5 时 M7 只能报逐人差值，不能报均值检验。p.26 正好可以引作这个处理方式的依据。</li>
+    <li><b>我的判断三：功能排序可用，但别过度解读。</b>评分前四名是即时差异 3.9、变更摘要 3.4、代码缩略图 3.2、活动浏览器 3.1，而任务草稿 2.9、运行时信息 2.8、前瞻线索 2.7 排在最后（p.25）。作者的解释是开发者更偏爱回顾性手段，可能因为现有记笔记方式已够用，或觉得这些功能太重（p.25）。本课题把"变更证据 + 进展摘要"做重、把"任务草稿"做轻，与此一致；但这是 2011 年 IDE 场景下的偏好，第 4 名与第 5 名只差 0.1 分（3.1 与 3.0），排序并不稳固，还有受访者明确说"任务列表类工具弊大于利"（p.25）。<strong>不能拿它当"我们必须实现即时差异"的硬证据。</strong></li>
+    <li><b>我的判断四：它对"任务"的定义其实很薄。</b>全文用"会话"作任务的代理，而会话边界是 15 分钟空闲这个纯时间阈值（p.13）。这恰好是本课题 RQ5 要质疑的地方：一个任务可跨多个会话，一个会话里也可有多个任务。作者自己在 6.5 节提到观察到"试探性会话"（早上先导航几分钟不改代码）与"高产日之后跟着几天低产"的模式（p.26），说明会话与任务不是一一对应。<strong>引用它的数据时要说明"会话 ≠ 任务"这个落差</strong>，否则本课题的任务级结论会被它的人—会话级数据撑不住。</li>
+  </ul>
+</section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p><strong>引在哪：</strong>开题报告"一、2（二）任务上下文与中断恢复"已引它（[27]）作为"恢复策略对线索丰富度的依赖"的依据，可继续沿用；"二、1（七）创新点 3（面向中断恢复的恢复快照自动生成）"必须引它——创新点 3 的原话是"已有研究给出恢复线索的类型与策略[27-28]，但所需信息仍需人工搜集"，这个"仍需人工"的判断正来自本篇 p.24 那段论证。<strong>对应哪个模块：</strong>研究内容第 ④ 块"交互界面与任务续接"，具体是<strong>任务快照</strong>的三类事项（已完成/未完成/待验证）与<strong>任务时间线</strong>首屏；评价上对应表 2-3 的 M7（恢复用时）、M8（理解要点命中数）、M9（问题定位用时）、M11（SUS）。</p>
+    <p>本篇对应的是四个核心问题里的<strong>上下文丢失</strong>：中断后需要重建的工作状态没有被任何工具显式表示。同簇另两篇各补一角——MSR 综述画出"数据源分散、跨源无链接"的问题地图（对应<strong>信息分散</strong>），noWorkflow 给出"把一次执行记成可查询溯源"的技术路线（对应<strong>溯源断裂</strong>）。</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p>"四类工作状态"可当成本课题任务快照的完备性检查表：快照里有没有"改了什么"（制品）、"接下来做什么"（计划）、"要达成什么"（目标）、"有哪些非代码的推理依据"（表征）。目前设计覆盖前两类，后两类靠 LLM 摘要补。</p></div>
+    <div class="card"><h4>可对照</h4><p>Table 15 是一份现成的基线活动频率表。论文里报告"受试者在 B0 条件下花多久翻 git 日志/会话记录"时，可与它的 4%/9% 对照，说明 2011 年 IDE 场景与 2026 年智能体场景的异同。</p></div>
+    <div class="card"><h4>要避开</h4><p>不要把它的百分比当成"本课题用户也会如此"的预测。它的分母是 IDE 会话，本课题的对象是智能体任务；只借方向与机制，不借具体数值。</p></div>
+  </div>
+
+  <p><strong>它不能支撑什么：</strong>第一，不能支撑"自动生成的任务快照能降低恢复成本"——它没有任何工具干预实验，这个因果结论必须由本课题实验二的 B0/C2 对照给出。第二，不能支撑智能体场景的任何具体数字，它连"代码智能体"这个概念都还没有。第三，不能支撑 LLM 摘要的可行性或可信性：它推荐的"变更摘要"是人写或工具抽取的短摘要，与"模型生成 + 证据绑定"是两件事。第四，不能支撑任务边界判定——它用 15 分钟空闲阈值切会话，是<strong>假设</strong>而非验证，而本课题 RQ5 恰恰要检验这类规则的 F1 与阈值敏感性。<mark>一句话：它替本课题证明了"上下文丢失是真实且昂贵的"，但没有证明"任何特定解法有效"。</mark></p>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+  <p>四句，分别是问题的本质、程序为什么难恢复、工具为什么缺位、以及作者对自己数据的诚实限定。</p>
+
+  <blockquote>
+    <p>First, much knowledge used for the programming task is of a tacit and ephemeral nature—it is not explicitly written down anywhere, and it involves many temporary details that have not yet deeply taken root in the mind.</p>
+    <p>第一，编程任务中用到的很多知识是默会的、短暂的——它没有被明确写在任何地方，而且包含许多尚未在心里扎根的临时细节。</p>
+    <span class="src">— 原文 p.2</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Second, a software program, unlike a novel or television series, does not have a simple linear structure—a recap or rescanning the last few paragraphs of text is not enough to allow the developer to resume work.</p>
+    <p>第二，软件程序不像小说或电视剧那样具有简单的线性结构——一段回顾或重扫最后几段文字，并不足以让开发者恢复工作。</p>
+    <span class="src">— 原文 p.2</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Because there are no explicit representations of plans, goals, or intermediate knowledge used during a task, developers rely on ad-hoc strategies to trigger and activate those memories. A likely reason why these strategies fail is caused by insufficient cues contained at the last site of work.</p>
+    <p>因为任务中使用的计划、目标或中间知识没有任何显式表示，开发者只能依靠临时性的策略去触发和激活这些记忆。这些策略之所以失败，很可能是因为最后的工作地点所包含的线索不足。</p>
+    <span class="src">— 原文 p.24</span>
+  </blockquote>
+
+  <blockquote>
+    <p>In the worst case, the experimental values found in this study serve as an upper bound.</p>
+    <p>在最坏的情况下，本研究报告的实验数值构成一个上界。</p>
+    <span class="src">— 原文 p.26</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>恢复延迟 <span class="term">resumption lag</span></dt>
+    <dd>人回到任务后重新拾起思路所需的时间。心理学实验里通常以"被告知继续"到"第一次操作"的秒级时间度量（p.3）。</dd>
+    <dt>编辑延迟 <span class="term">edit lag</span></dt>
+    <dd>本篇提出的度量：从回到编程任务到第一次真正编辑代码之间的时间，量级为分钟（p.14–p.15）。它是本课题"恢复用时"指标的方法论祖先。</dd>
+    <dt>中断延迟 <span class="term">interruption lag</span></dt>
+    <dd>从停止工作到开始处理打断之间的一小段时间，人在这段时间里可能主动把工作状态"编码"下来（p.3）。</dd>
+    <dt>工作状态 <span class="term">working state</span></dt>
+    <dd>本篇定义为四类：制品（任务相关的代码元素）、计划（要执行的动作序列）、目标（要达成的目的）、心智表征（对任务与领域的心理模型）（p.8）。</dd>
+    <dt>暂停策略 <span class="term">suspension strategies</span></dt>
+    <dd>中断前后用来保存工作状态的手段：复述、序列化、线索预置、上下文清理、任务脚手架（p.9–p.12）。</dd>
+    <dt>恢复策略 <span class="term">resumption strategies</span></dt>
+    <dd>回来之后用来重建工作状态的手段：回到上次位置、导航回忆、查任务单、跑程序、查 TODO、看变更历史、看差异（p.10–p.12）。</dd>
+    <dt>序列化 <span class="term">serialization</span></dt>
+    <dd>把脑中的工作状态写成外部形式（便条、注释）。成本高但信息量大；"贴身处"与"非贴身处"的便条在可见性与上下文完整性上互相权衡（p.9）。</dd>
+    <dt>线索预置 <span class="term">cue priming</span></dt>
+    <dd>刻意留下环境线索（不关窗口、高亮几行、留着报错），成本低但脆弱，容易被后续操作或 IDE 重启破坏（p.9）。</dd>
+    <dt>目标记忆模型 <span class="term">memory for goals</span></dt>
+    <dd>基于 ACT-R 的认知模型：目标按激活水平竞争注意力、随时间衰减，环境线索可提升激活。它是"线索越强恢复越快"这一推断的理论依据（p.6）。</dd>
+    <dt>导航抖动 <span class="term">navigation jitter</span></dt>
+    <dd>开发者在多个位置间快速来回切换的现象，常发生在试图回忆某个位置时（p.7）。它是"线索不足"的行为表征。</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>为什么作者要另造 edit lag，而不用心理学里现成的 resumption lag？</summary><p>提示：p.3 与 p.14。resumption lag 在实验里是"被告知继续到第一次点鼠标"，秒级；而软件开发的恢复成本体现在"要重读多少代码、重建多少假设"，分钟级。度量单位选错，就会得出"中断影响可忽略"的错误结论——原文正是先问"到底有没有影响"，再用 edit lag 分布回答的（p.15）。</p></details>
+    <details><summary>为什么"查任务列表"的会话延迟反而更高？这不合理吗？</summary><p>提示：p.19 的解释是这些会话可能花时间在探索源码、形成变更计划。合理的原因有两种：任务本身更复杂，或工具不好用（找不到任务就到处翻）。观测数据无法区分，这正是作者在 p.26 承认的"活动与因果无关"问题。要区分只能做受控实验。</p></details>
+    <details><summary>把它搬到代码智能体场景，哪几个数字会变大、哪几个会变小？</summary><p>提示：变大的是"必须先导航"（IDE 状态线索消失，83% 只会更高）与"查版本历史/差异"（智能体改的代码不是你改的，必须靠 diff 才知道发生了什么）；变小的是"回到上次位置"（"位置"在智能体会话里没有意义）。这是推断，不是原文结论——写论文时要标明是推断。</p></details>
+    <details><summary>它的 15 分钟会话切分阈值，对本课题的任务边界判定有什么启示？</summary><p>提示：它把 15 分钟当"中断"的操作化定义，理由是事件间隔的泊松分布（98% 小于 1 分钟），也就是说这个阈值只是"能把簇切开"的宽松下界，并未从语义上验证。本课题 RQ5 要做的正是验证这类规则的 F1 与阈值敏感性——不能直接沿用 15 分钟，只能作为初始值并报告敏感性。</p></details>
+    <details><summary>作者说结果只是"上界"，那么这篇还剩什么价值？</summary><p>提示：上界也是信息——它说明"恢复成本不高于 X"，而 X 已经大到值得做工具（30% 的会话超过 30 分钟）。更重要的是它给出了策略分类与功能偏好排序，这两样不依赖精确数值。一个诚实的上界加一套可复用的分类，比一个漂亮但站不住的均值有用。</p></details>
+  </div>
+</section>
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="08-msr-survey.html"><span class="dir">← 上一篇</span>MSR 综述与分类</a>
+    <a href="index.html" style="text-align:right"><span class="dir">下一篇 →</span>回到文献精读总览</a>
+  </div>
+</div>
+
+<footer>
+  《打断之后，程序员到底靠什么把上下文捡回来》精读笔记 · 基于 Software Quality Journal 2011 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

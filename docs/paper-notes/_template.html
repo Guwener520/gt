@@ -1,0 +1,452 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{中文标题}}｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="{{a|b|c}}">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>{{第 N 篇 · 中文短名}}</span></div>
+    <h1>{{中文标题：把论文主张译成一句人话，不要直译标题}}</h1>
+    <p class="en">{{英文原标题}}</p>
+    <p class="byline"><strong>{{第一作者 et al.}}</strong> · {{会议/期刊}} {{年份}} · 原文 {{N}} 页</p>
+    <div class="chips">
+      <span class="chip hot">{{研究类型：基准/框架/工具/实证}}</span>
+      <span class="chip">{{主题标签}}</span>
+      <span class="chip">与本课题关联 ★★★★☆</span>
+      <span class="chip">精读用时 ≈ {{15}} 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>{{用 40–60 字说清这篇论文到底证明了什么、为什么重要。不要写"本文提出了一种方法"，要写具体主张。}}</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>{{3–5 句：这篇在解决什么痛点、用什么办法、得到什么结论。让完全没读过的人能立刻抓住骨架。}}</p>
+  </div>
+
+  <p>{{再展开一段：把论文放回它出现的时间点。它之前大家怎么做？它之后大家改怎么做？这一段是"坐标系"，不要复述摘要。}}</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>{{怎么读这篇：先看哪节、哪张图是核心、哪些附录可以跳过。}}</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>{{先讲"当时的困境"，用具体场景而不是抽象名词。}}</p>
+
+  <div class="vs">
+    <div><h4>之前的做法</h4><ul><li>{{…}}</li><li>{{…}}</li></ul></div>
+    <div><h4>这篇的做法</h4><ul><li>{{…}}</li><li>{{…}}</li></ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>{{用一个生活化类比解释核心矛盾。类比要准确，不要为了生动牺牲正确性。}}</p>
+  </div>
+</section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：一句话与一张图</h2>
+  <p>{{把论文的核心机制讲清楚。先给一句话，再给图，再拆解。}}</p>
+
+  <figure>
+    <div class="frame">
+      <!-- 用内联 SVG 画示意图：stroke="currentColor" 或具体色，字号 12–14，宽度 viewBox 0 0 720 xxx -->
+      <svg viewBox="0 0 720 260" role="img" aria-label="{{图说明}}">
+        <text x="360" y="130" text-anchor="middle" font-size="14" fill="#6b7280">（此处放示意图，见下方组件示例的 SVG 写法）</text>
+      </svg>
+    </div>
+    <figcaption>图 1　{{图题。说明这张图要读者看到什么。}}</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p>{{把"为什么这样设计就 work"讲透。这是全文最重要的一段。}}</p>
+  </div>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：它到底怎么做的</h2>
+  <p>{{按论文的真实结构拆成 2–4 个部件，每个部件说清"输入—做什么—输出"。}}</p>
+
+  <ol class="steps">
+    <li><b>{{部件名}}</b>{{说明}}</li>
+    <li><b>{{部件名}}</b>{{说明}}</li>
+    <li><b>{{部件名}}</b>{{说明}}</li>
+  </ol>
+
+  <h3>{{子标题：某个值得单独讲的细节}}</h3>
+  <p>{{…}}</p>
+
+  <div class="callout warn">
+    <span class="tag">容易误读</span>
+    <p>{{指出常见误解，例如"它不是 X，而是 Y"。}}</p>
+  </div>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：数字说明什么</h2>
+  <p>{{先交代实验设置（数据集/基线/指标），再给数，再解释。数字必须来自原文。}}</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">{{数字}}</div><div class="k">{{指标含义}}</div></div>
+    <div class="stat"><div class="v">{{数字}}</div><div class="k">{{指标含义}}</div></div>
+    <div class="stat"><div class="v">{{数字}}</div><div class="k">{{指标含义}}</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　{{表题（表题在上）}}</caption>
+      <thead><tr><th>{{列}}</th><th>{{列}}</th><th>{{列}}</th></tr></thead>
+      <tbody>
+        <tr><td>{{…}}</td><td class="num">{{…}}</td><td class="num best">{{…}}</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>{{解读：数字背后说明什么？哪些提升是实质的，哪些是噪声？作者自己的归因是什么？}}</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <p>{{批判性阅读：作者承认的局限 + 你发现的问题。分开写清楚。}}</p>
+  <ul>
+    <li><b>作者自述：</b>{{…}}</li>
+    <li><b>外部质疑：</b>{{…}}</li>
+    <li><b>我的判断：</b>{{…}}</li>
+  </ul>
+</section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p>{{具体到"开题报告第几节可以引它""系统哪一部分可以参考它的设计"。要可执行，不要泛泛而谈。}}</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p>{{…}}</p></div>
+    <div class="card"><h4>可对照</h4><p>{{…}}</p></div>
+    <div class="card"><h4>要避开</h4><p>{{…}}</p></div>
+  </div>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+  <p>{{挑 2–4 句真正有信息量的原话（英文原文 + 中文翻译），标注页码。页码以分页文本里的 [PAGE N] 为准。}}</p>
+
+  <blockquote>
+    <p>{{English original sentence.}}</p>
+    <p>{{中文翻译。}}</p>
+    <span class="src">— 原文 p.{{N}}</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>{{术语}} <span class="term">{{English}}</span></dt>
+    <dd>{{一句话解释，尽量用本课题语境。}}</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>{{问题 1}}</summary><p>{{提示：回答方向，或"原文没有正面回答，可从 X 节推断"。}}</p></details>
+    <details><summary>{{问题 2}}</summary><p>{{…}}</p></details>
+  </div>
+</section>
+
+<!-- ==================== 组件示例：写完请整段删除 ====================
+<div class="callout key"><span class="tag">关键机制</span><p>…</p></div>
+<div class="callout analogy"><span class="tag">打个比方</span><p>…</p></div>
+<div class="callout warn"><span class="tag">容易误读</span><p>…</p></div>
+<div class="callout relate"><span class="tag">怎么用</span><p>…</p></div>
+<div class="callout note"><span class="tag">备注</span><p>…</p></div>
+
+内联 SVG 示意图的标准写法（配色跟随主题，勿用外部图片）：
+<svg viewBox="0 0 720 200" role="img" aria-label="说明">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+    <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/></marker></defs>
+  <rect x="20" y="40" width="150" height="56" rx="10" fill="#eef0fe" stroke="#4f46e5" stroke-width="1.5"/>
+  <text x="95" y="73" text-anchor="middle" font-size="13" fill="#191c1f">方块文字</text>
+  <line x1="175" y1="68" x2="245" y2="68" stroke="#6b7280" stroke-width="1.5" marker-end="url(#ar)"/>
+  <text x="360" y="120" text-anchor="middle" font-size="12" fill="#6b7280">注释文字</text>
+</svg>
+================================================================= -->
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="{{prev.html}}"><span class="dir">← 上一篇</span>{{上一篇中文短名}}</a>
+    <a href="{{next.html}}" style="text-align:right"><span class="dir">下一篇 →</span>{{下一篇中文短名}}</a>
+  </div>
+</div>
+
+<footer>
+  《{{中文标题}}》精读笔记 · 基于 {{来源}} 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

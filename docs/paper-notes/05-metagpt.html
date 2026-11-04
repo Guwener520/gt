@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>把软件公司的 SOP 塞进多智能体：用结构化文档代替闲聊｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="a">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>第 05 篇 · MetaGPT</span></div>
+    <h1>把软件公司的 SOP 塞进多智能体：用结构化文档代替闲聊</h1>
+    <p class="en">MetaGPT: Meta Programming for A Multi-Agent Collaborative Framework</p>
+    <p class="byline"><strong>Sirui Hong, Mingchen Zhuge et al.</strong> · ICLR 2024 · 原文 29 页</p>
+    <div class="chips">
+      <span class="chip hot">框架 + 基准</span>
+      <span class="chip">多智能体协作</span>
+      <span class="chip">与本课题关联 ★★★★☆</span>
+      <span class="chip">精读用时 ≈ 20 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>让五个角色按人类软件公司的标准作业流程（SOP）交接<strong>结构化文档</strong>而不是自由聊天——PRD、系统设计、任务清单、代码、测试——把「级联幻觉」挡在文档格式这道关口上。7 个开发任务上可执行性均分 3.75（满分 4）、人工返工 0.83 次，同期 ChatDev 是 2.25 与 2.5（p.8）。</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>2023 年多智能体很热，主流做法是给几个 agent 分配角色、自由对话（CAMEL、ChatDev、AgentVerse）。本文的判断是：<strong>自由对话会把错误一路传下去</strong>，因为每轮输出都没有约束。替代方案是把软件公司的 SOP 编码进 prompt 序列——每个角色产出固定格式的文档，下游只读文档（p.1、p.6）。</p>
+  </div>
+
+  <p>坐标系要从它和 ChatDev 的关系看。两篇几乎同期（本文 2023 年 8 月，ChatDev 7 月），都在做「多角色协作写软件」但路线相反：ChatDev 用对话链，MetaGPT 用文档流水线。它们互相评价过对方——本文说 ChatDev 靠对话会丢信息（p.6），ChatDev 说本文的角色「只是遵守人类专家预定义的静态指令」（ChatDev 原文 p.5）。这对互评是理解「协作介质」最好的入口。</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>先读 §3.1（角色与流程）和附录 B（第 17–20 页）：附录里有一份完整的 PRD 与系统设计，比任何文字描述都直观。§4.4 的消融表（第 9 页）信息量最大：角色一个个加上去，返工从 10 降到 2.5。</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>你给两个 agent 分配「产品经理」和「架构师」，让它们聊需求。头两轮很像样，第五轮开始互相客套，论文里就举了两个 agent 聊午饭的例子（p.2）。更麻烦的是错误会级联：产品经理漏一个需求，架构师照着漏的需求设计，工程师照着错的设计写代码，最后没人能指出哪一步错了（p.1）。</p>
+
+  <p>作者把这个现象叫「天真串联 LLM 导致的级联幻觉」（cascading hallucinations）。问题不在单个 agent 不够强，而在<strong>交接物没有约束</strong>：交接自由文本时，接收方无法判断它是否完整自洽，误差就自由累积。</p>
+
+  <div class="vs">
+    <div><h4>之前的做法（自由对话）</h4><ul>
+      <li>交接物是聊天记录，格式随意、长度失控</li>
+      <li>没有校验点，错误到最后一轮才暴露</li>
+    </ul></div>
+    <div><h4>这篇的做法（SOP + 文档）</h4><ul>
+      <li>交接物是固定 schema 的文档（PRD、设计、任务清单）</li>
+      <li>代码要真的跑，报错回灌，最多重试 3 次（p.6）</li>
+    </ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>自由对话像传话游戏：每传一手都会失真，传到第十个人已面目全非。SOP 像接力赛：交接的是接力棒本身（那份格式固定的文档），不是「我对上一棒的理解」。</p>
+  </div>
+</section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：一句话与一张图</h2>
+  <p>一句话：<strong>把人类软件公司的标准作业流程编码成「角色 + 固定格式的中间产物 + 可执行反馈」三件套</strong>，让每一步的输出先满足格式，再谈内容（p.1、p.5）。</p>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 336" role="img" aria-label="MetaGPT 的 SOP 流水线：需求经产品经理、架构师、项目经理、工程师、QA 依次交接结构化文档，底部是共享消息池与可执行反馈">
+        <defs><marker id="a5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#4f46e5"/></marker>
+          <marker id="a5g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#0f766e"/></marker></defs>
+
+        <text x="20" y="24" font-size="12" font-weight="700" fill="#4f46e5">SOP：每一步的产物都有固定 schema，下游只读文档</text>
+
+        <rect x="18" y="40" width="98" height="96" rx="9" fill="#f4edfd" stroke="#d9c8f7"/>
+        <text x="67" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#191c1f">需求</text>
+        <text x="67" y="82" text-anchor="middle" font-size="10.5" fill="#3d4450">用户一句</text>
+        <text x="67" y="97" text-anchor="middle" font-size="10.5" fill="#3d4450">自然语言</text>
+        <text x="67" y="112" text-anchor="middle" font-size="10.5" fill="#6b7280">无格式</text>
+
+        <line x1="118" y1="88" x2="132" y2="88" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#a5)"/>
+
+        <rect x="134" y="40" width="104" height="96" rx="9" fill="#eef0fe" stroke="#c7cbf5"/>
+        <text x="186" y="60" text-anchor="middle" font-size="11.5" font-weight="700" fill="#191c1f">产品经理</text>
+        <text x="186" y="80" text-anchor="middle" font-size="10.5" fill="#4f46e5">PRD</text>
+        <text x="186" y="96" text-anchor="middle" font-size="10" fill="#3d4450">需求池 P0/P1</text>
+        <text x="186" y="111" text-anchor="middle" font-size="10" fill="#3d4450">用户故事</text>
+        <text x="186" y="126" text-anchor="middle" font-size="10" fill="#6b7280">+ 待澄清项</text>
+
+        <line x1="240" y1="88" x2="254" y2="88" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#a5)"/>
+
+        <rect x="256" y="40" width="104" height="96" rx="9" fill="#eef0fe" stroke="#c7cbf5"/>
+        <text x="308" y="60" text-anchor="middle" font-size="11.5" font-weight="700" fill="#191c1f">架构师</text>
+        <text x="308" y="80" text-anchor="middle" font-size="10.5" fill="#4f46e5">系统设计</text>
+        <text x="308" y="96" text-anchor="middle" font-size="10" fill="#3d4450">文件清单</text>
+        <text x="308" y="111" text-anchor="middle" font-size="10" fill="#3d4450">数据结构 / 接口</text>
+        <text x="308" y="126" text-anchor="middle" font-size="10" fill="#6b7280">时序图</text>
+
+        <line x1="362" y1="88" x2="376" y2="88" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#a5)"/>
+
+        <rect x="378" y="40" width="104" height="96" rx="9" fill="#eef0fe" stroke="#c7cbf5"/>
+        <text x="430" y="60" text-anchor="middle" font-size="11.5" font-weight="700" fill="#191c1f">项目经理</text>
+        <text x="430" y="80" text-anchor="middle" font-size="10.5" fill="#4f46e5">任务清单</text>
+        <text x="430" y="96" text-anchor="middle" font-size="10" fill="#3d4450">每个文件</text>
+        <text x="430" y="111" text-anchor="middle" font-size="10" fill="#3d4450">= 一个 task</text>
+        <text x="430" y="126" text-anchor="middle" font-size="10" fill="#6b7280">+ 依赖包</text>
+
+        <line x1="484" y1="88" x2="498" y2="88" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#a5)"/>
+
+        <rect x="500" y="40" width="100" height="96" rx="9" fill="#e7f5f2" stroke="#a9d8cf"/>
+        <text x="550" y="60" text-anchor="middle" font-size="11.5" font-weight="700" fill="#191c1f">工程师</text>
+        <text x="550" y="80" text-anchor="middle" font-size="10.5" fill="#0f766e">代码 + 单测</text>
+        <text x="550" y="96" text-anchor="middle" font-size="10" fill="#3d4450">逐个文件实现</text>
+        <text x="550" y="111" text-anchor="middle" font-size="10" fill="#3d4450">真的运行</text>
+        <text x="550" y="126" text-anchor="middle" font-size="10" fill="#6b7280">失败重试 ≤3</text>
+
+        <line x1="602" y1="88" x2="616" y2="88" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#a5)"/>
+
+        <rect x="618" y="40" width="86" height="96" rx="9" fill="#fdf4e4" stroke="#e8d3a8"/>
+        <text x="661" y="60" text-anchor="middle" font-size="11.5" font-weight="700" fill="#191c1f">QA</text>
+        <text x="661" y="80" text-anchor="middle" font-size="10.5" fill="#b45309">测试用例</text>
+        <text x="661" y="96" text-anchor="middle" font-size="10" fill="#3d4450">按需求池</text>
+        <text x="661" y="111" text-anchor="middle" font-size="10" fill="#3d4450">逐条写</text>
+
+        <path d="M550 140 L550 168 L430 168" fill="none" stroke="#0f766e" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#a5g)"/>
+        <text x="556" y="163" font-size="10.5" fill="#0f766e">traceback / 测试结果回灌，改完再跑</text>
+
+        <rect x="18" y="186" width="686" height="40" rx="9" fill="#ffffff" stroke="#e6e2d9"/>
+        <text x="34" y="205" font-size="11.5" font-weight="700" fill="#3d4450">共享消息池（publish）+ 角色订阅（subscribe）</text>
+        <text x="34" y="220" font-size="10.5" fill="#6b7280">架构师只订阅 PRD，工程师只订阅与自己文件相关的任务 —— 通信拓扑从两两互通降为广播 + 过滤</text>
+
+        <line x1="186" y1="186" x2="186" y2="140" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#a5g)"/>
+        <line x1="430" y1="186" x2="430" y2="140" stroke="#6b7280" stroke-width="1.2" stroke-dasharray="3 3" marker-end="url(#a5g)"/>
+
+        <text x="20" y="252" font-size="11" fill="#b42318">关键：下游角色的输入被上游的文档 schema「钉死」了格式，歧义空间变小</text>
+        <text x="20" y="270" font-size="11" fill="#6b7280">每一步都有两个纠错点：格式约束（写不全就露馅）+ 可执行验证（跑不过就回灌）</text>
+        <text x="20" y="288" font-size="11" fill="#6b7280">误差在每一步被压小，而不是留到最后一轮才暴露</text>
+      </svg>
+    </div>
+    <figcaption>图 1　MetaGPT 的流水线。两条虚线分别是「订阅」（只收相关消息）与「执行反馈」（代码真跑、报错回灌），是 SOP 之外的补充机制。</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p><strong>中间产物是「可校验的契约」。</strong>PRD 里有带优先级的<strong>需求池</strong>（P0/P1 分级）（p.18），系统设计里有<strong>文件清单</strong>（p.19），任务清单把每个文件映射到一句功能描述（p.20）。下游的输入被上游的格式钉死，漏一条需求就会露出来。</p>
+    <p><strong>文档取代对话，切断了「闲聊」这条幻觉通道。</strong>作者写得很直白：agent 之间通过 documents and diagrams 通信，而不是 dialogue，因为文档「包含全部必要信息，能防止无关或缺失的内容」（p.6）。</p>
+    <p><strong>结构化还带来可检查性。</strong>每个中间产物人都能读、能改；工程师写完代码要真的执行，错误信息回灌，最多重试 3 次（p.6）。这让 SOP 不只是「写得更整齐」，而有了客观的通过判据。</p>
+    <p><strong>发布订阅把通信拓扑从 O(n²) 降到 O(n)。</strong>全局消息池 + 按角色订阅，agent 只接收自己关心的前置产物（p.6）。角色越多，这个设计越必要。</p>
+    <p>因果链总结：级联幻觉的根源是「每一步输出都没有约束，误差自由累积」。SOP 给每一步加了<strong>格式约束</strong>与<strong>可执行验证</strong>两个纠错点，误差在每一步被压小——这才是它 work 的原因，不是「多了几个角色」。</p>
+  </div>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：它到底怎么做的</h2>
+
+  <ol class="steps">
+    <li><b>角色定义</b>五个角色：产品经理、架构师、项目经理、工程师、QA 工程师。每个角色有 profile / goal / constraints 与各自的可用工具——产品经理能搜索，工程师能执行代码（p.5）。角色不是人格设定，是<strong>职责与产出格式</strong>的绑定。</li>
+    <li><b>结构化交接</b>PRD 含产品目标、用户故事、竞品分析、需求池、待澄清项（p.17–18）；系统设计含实现方案、文件清单、待澄清项（p.19）；任务清单含依赖包、API 规格、逐文件逻辑说明（p.20）。</li>
+    <li><b>通信协议</b>共享消息池 + 订阅：agent 把产物发布到池里，其他 agent 按自己的订阅规则取用；收到全部前置依赖才被激活（p.6）。</li>
+    <li><b>可执行反馈</b>工程师写单元测试并执行，拿到结果；不通过就调试，最多 3 次（p.6）。这是全流程里唯一的「客观判据」。</li>
+  </ol>
+
+  <h3>一个值得单独看的字段：待澄清项</h3>
+  <p>PRD 和系统设计里都有一项「Anything UNCLEAR」（p.18、p.19）。作者没展开讲，但它是这套设计的<strong>逃生阀</strong>：允许角色显式声明「我不确定」，而不是硬编一个答案往下传。这和 ChatDev 的「沟通式去幻觉」是同一问题的两种解法——一个写进文档模板，一个变成对话动作。</p>
+
+  <div class="callout warn">
+    <span class="tag">容易误读</span>
+    <p>MetaGPT <strong>不是</strong>「多智能体辩论」：角色之间不互相质疑、不投票、不协商，流程顺序写死；所谓「协作」是<strong>单向流水线 + 消息广播</strong>。把它当成「一群 agent 开会」会完全读错。</p>
+  </div>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：数字说明什么</h2>
+  <p>三个数据集：HumanEval（164 题）、MBPP（427 题）两个公开代码生成基准，加自建的 SoftwareDev（70 个任务，主实验随机取 7 个）（p.7）。指标含可执行性（1–4 分人评）、成本（时间 / token）、代码统计、生产率（每行代码的 token 数）、人工返工次数（p.7）。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">85.9%</div><div class="k">HumanEval pass@1，配 GPT-4（p.7）</div></div>
+    <div class="stat"><div class="v">87.7%</div><div class="k">MBPP pass@1，配 GPT-4（p.7）</div></div>
+    <div class="stat"><div class="v">3.75</div><div class="k">SoftwareDev 可执行性均分（p.8）</div></div>
+    <div class="stat"><div class="v">0.83</div><div class="k">人工返工次数，ChatDev 为 2.5（p.8）</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　SoftwareDev 上的统计对比（数据取自原文 p.8 表 1）</caption>
+      <thead><tr><th>指标</th><th>ChatDev</th><th>MetaGPT（无执行反馈）</th><th>MetaGPT</th></tr></thead>
+      <tbody>
+        <tr><td>可执行性（1–4 分）</td><td class="num">2.25</td><td class="num">3.67</td><td class="num best">3.75</td></tr>
+        <tr><td>运行时间（秒）</td><td class="num">762</td><td class="num best">503</td><td class="num">541</td></tr>
+        <tr><td>token 用量</td><td class="num best">19,292</td><td class="num">24,613</td><td class="num">31,255</td></tr>
+        <tr><td>代码文件数</td><td class="num">1.9</td><td class="num">4.6</td><td class="num best">5.1</td></tr>
+        <tr><td>每文件行数</td><td class="num">40.8</td><td class="num">42.3</td><td class="num best">49.3</td></tr>
+        <tr><td>总行数</td><td class="num">77.5</td><td class="num">194.6</td><td class="num best">251.4</td></tr>
+        <tr><td>生产率（每行代码 token）</td><td class="num">248.9</td><td class="num">126.5</td><td class="num best">124.3</td></tr>
+        <tr><td>人工返工次数</td><td class="num">2.5</td><td class="num">2.25</td><td class="num best">0.83</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>怎么读？<strong>最硬的两个数是可执行性 2.25→3.75 与返工 2.5→0.83</strong>，它们直接对应「少犯错、少返工」。但要注意三点：一是 token 反而更多（31,255 vs 19,292），「更省」指的是每行代码的 token（124.3 vs 248.9），不是总成本；二是 SoftwareDev 只有 7 题、人评 1–4 分，没有评分者一致性报告；三是 85.9% / 87.7% 是「MetaGPT + GPT-4」的成绩，附录里 GPT-4 单独也有 72.4%–81.2%（p.25），幅度取决于基线怎么设。</p>
+
+  <p>消融表（p.9 表 3）比主表更能说明机制：只放工程师时人工返工 10 次、可执行性 1.0；加产品经理后 6.5 次 / 2.0；再加架构师 4.0 次 / 2.5；四个角色齐了是 2.5 次 / 4.0。有意思的是「产品经理 + 项目经理但跳过架构师」这一行：3 个 agent、205 行、返工 3.5 次、可执行性只有 2.0——<strong>角色数量不等于效果，缺了架构师这一环，多一个 agent 反而更差</strong>。可见 SOP 的价值在「链条完整」，不在「人头够多」。</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <ul>
+    <li><b>作者自述：</b>覆盖不了 UI / 前端与多模态；代码虽更多，仍难满足真实复杂需求；用户很难中途打断，也无法给每个 agent 单独设检查点（p.25）。</li>
+    <li><b>外部质疑：</b>ChatDev 那篇的批评是——本文的角色「只是遵守人类专家预定义的静态指令」，流程无法随任务自适应（ChatDev 原文 p.5）。这条批评成立：SOP 写死之后，任务必须「长得像软件开发」才用得上。</li>
+    <li><b>我的判断一：</b>消融表（p.9）其实说了一件作者没强调的事——加角色的收益几乎全在<strong>返工次数</strong>与<strong>可执行性</strong>上，而代码行数、费用都变差（$0.915 → $1.385）。SOP 买到的是「少返工」，不是「多产出」。这对本课题有用：<strong>过程结构化的价值应该用返工/验证成本衡量，而不是产出量</strong>。</li>
+    <li><b>我的判断二：</b>论文完全没有度量「文档质量」。它假设格式对了内容就对，但需求池本身若是错的，SOP 只会让错误传得更整齐——而且因为每步都「看起来很规范」，反而更难被发现。</li>
+    <li><b>我的判断三：</b>「3.75 分」这个数字不可复现：人评 1–4 分、7 个任务、没有评分细则与一致性系数。它能支撑「比 ChatDev 好」这个定性结论，但不能跟别的指标换算。写综述应引「返工从 2.5 降到 0.83」，而不是 3.75。</li>
+  </ul>
+</section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p>这篇给本课题一个<strong>反方向的参照</strong>。开题报告 §1.2（四）提出要「以任务为根，统一挂接对话、变更、工具调用与测试」；MetaGPT 的「任务」是<strong>事先分解好</strong>的——每个文件一个 task（p.20），边界清清楚楚；本课题的任务<strong>事后从事件流里重建</strong>，边界要靠空闲时长、目标切换、提交动作推断（开题报告 §2.1（三）第（2）条）。这个对照可写进第 3 章任务边界判定的动机段。</p>
+    <p>第二处是 Checkpoint（检查点）。本文每个角色交接时天然形成一个「过程落点」：产物完整、可读、可回退。本课题可以借这个思路，<strong>把「一次完整的交接」定义为检查点</strong>。</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p>共享消息池 + 订阅 = 任务上下文视图的信息过滤机制。开题报告 §2.1（三）第（5）条的任务时间线可按「关注点」过滤，而非全量平铺。</p></div>
+    <div class="card"><h4>可对照</h4><p>它的「结构化中间产物」对应本课题的「变更卡片」：都是把过程压缩成可读、可校验的中间表示。区别是它由 agent 主动产出，本课题要从事件里重建。</p></div>
+    <div class="card"><h4>要避开</h4><p>不能引它支撑「多智能体调度」。开题报告 §2.1（四）明确把多智能体调度列为<strong>不做事项</strong>；它的角色编排是应用层逻辑，与采集/溯源层不是一回事。</p></div>
+  </div>
+
+  <p>再具体一点：第 2 章综述讲「智能体能力」时，这篇与 ChatDev 成对出现，说明「协作介质会影响错误传播方式」；第 4 章讲任务边界时，引它的「显式任务分解」作为理想情况，反衬隐式边界判定的难度（对应 RQ5）。但它<strong>不能</strong>支撑两件事：「事件模型」——它没有事件表示；「变更粒度」——它的产物是整份文件，没有 hunk 概念与位置映射。这两点正是分界线。</p>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+
+  <blockquote>
+    <p>MetaGPT encodes Standardized Operating Procedures (SOPs) into prompt sequences for more streamlined workflows, thus allowing agents with human-like domain expertise to verify intermediate results and reduce errors.</p>
+    <p>MetaGPT 把标准作业流程编码进 prompt 序列，使流程更顺畅，从而让具备类人领域专长的 agent 能校验中间结果、减少错误。</p>
+    <span class="src">— 原文 p.1</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Unlike ChatDev, agents in MetaGPT communicate through documents and diagrams (structured outputs) rather than dialogue. These documents contain all necessary information, preventing irrelevant or missing content.</p>
+    <p>与 ChatDev 不同，MetaGPT 的 agent 通过文档与图（结构化输出）而非对话来沟通。这些文档包含全部必要信息，可防止无关或缺失的内容。</p>
+    <span class="src">— 原文 p.6</span>
+  </blockquote>
+
+  <blockquote>
+    <p>In a company simulated by MetaGPT, all employees follow a strict and streamlined workflow, and all their handovers must comply with certain established standards. This reduces the risk of hallucinations caused by idle chatter between LLMs.</p>
+    <p>在 MetaGPT 模拟的公司里，所有员工遵守严格顺畅的流程，所有交接必须符合既定标准。这降低了 LLM 之间闲聊导致的幻觉风险。</p>
+    <span class="src">— 原文 p.2</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>标准作业流程 <span class="term">SOP</span></dt>
+    <dd>把一项工作拆成固定顺序、固定产出格式的步骤。本文主张「SOP 可以编码成 prompt 序列」。</dd>
+
+    <dt>级联幻觉 <span class="term">cascading hallucination</span></dt>
+    <dd>上游的错误没被发现，被下游当成事实继续加工，越传越偏。本课题「溯源断裂」在智能体语境下的对应现象。</dd>
+
+    <dt>结构化中间产物</dt>
+    <dd>有固定字段的交接物（PRD、系统设计、任务清单），既是给下游的输入，也是给人看的检查点——对本课题「变更卡片」设计直接可用。</dd>
+
+    <dt>共享消息池 / 订阅 <span class="term">shared message pool / subscription</span></dt>
+    <dd>所有 agent 把产物发布到一个池子，各自按规则订阅。作用是把两两通信降为广播加过滤，避免每个角色读全部历史。</dd>
+
+    <dt>可执行反馈 <span class="term">executable feedback</span></dt>
+    <dd>代码真的运行、报错回灌、修正后再跑，最多 3 次。它是流程里唯一的客观判据，也是「验证依据」的雏形。</dd>
+
+    <dt>pass@1</dt>
+    <dd>只生成一次就通过测试的比例。本课题不做代码生成评测，但读这类论文时要分清 pass@1 与 pass@k，别被「85.9%」误导。</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>为什么「文档」比「对话」更能抑制幻觉？仅因为格式固定吗？</summary><p>不止。格式固定还带来两个效果：<strong>可穷举检查</strong>——需求池是列表，漏一条肉眼可见；<strong>可回退</strong>——文档是完整快照，出问题能定位到哪一份。对话两者都没有，只能从头重读（p.6）。</p></details>
+
+    <details><summary>消融表里「跳过架构师」那一行为什么反而更差？</summary><p>因为它有 3 个 agent、205 行代码，可执行性却只有 2.0（p.9）。没有架构师就没有文件清单与接口约定，工程师只能各自猜结构，代码量上去了但拼不起来。可见 SOP 的价值在<strong>链条完整</strong>而非角色数量——对本课题的启示是：任务上下文的完整性比信息量更重要。</p></details>
+
+    <details><summary>它的 token 用量比 ChatDev 高 60%，为什么还说它「更省」？</summary><p>因为它把「省」定义成<strong>每行代码的 token</strong>（124.3 vs 248.9，p.8），这是生产率指标而非成本指标。真实成本还要算人工返工（0.83 vs 2.5 次）；把人的时间折成钱它可能确实更省，但论文没做这个折算。</p></details>
+  </div>
+</section>
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="04-codeact.html"><span class="dir">← 上一篇</span>CodeAct</a>
+    <a href="06-chatdev.html" style="text-align:right"><span class="dir">下一篇 →</span>ChatDev</a>
+  </div>
+</div>
+
+<footer>
+  《MetaGPT》精读笔记 · 基于 ICLR 2024 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

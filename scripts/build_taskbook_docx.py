@@ -148,6 +148,8 @@ def add_table(doc, rows):
         set_col_widths(table, [3.4, 12.0])
     elif len(header) == 3 and any("签字" in h for h in header):
         set_col_widths(table, [3.4, 8.6, 3.4])
+    elif len(header) == 3 and header[0] == "周次":
+        set_col_widths(table, [2.6, 7.2, 4.6])
     elif len(header) == 3:
         set_col_widths(table, [4.6, 3.4, 7.4])
     elif len(header) == 4 and header[0] == "阶段":
@@ -181,10 +183,11 @@ def build(src: Path, out: Path):
     doc = Document()
     sec = doc.sections[0]
     sec.page_width, sec.page_height = Cm(21.0), Cm(29.7)
-    sec.top_margin = Cm(2.54)
-    sec.bottom_margin = Cm(2.54)
-    sec.left_margin = Cm(3.0)
-    sec.right_margin = Cm(2.6)
+    sec.top_margin = Cm(2.3)
+    sec.bottom_margin = Cm(1.0)
+    sec.left_margin = Cm(3.17)
+    sec.right_margin = Cm(3.17)
+    sec.footer_distance = Cm(0.5)
     add_page_number_footer(sec)
 
     normal = doc.styles["Normal"]
@@ -203,6 +206,14 @@ def build(src: Path, out: Path):
         if line == "<!-- pagebreak -->":
             doc.add_page_break()
             i += 1
+        elif line.startswith("<!--"):                  # skip Markdown editor comments
+            while i < n and "-->" not in lines[i]:
+                i += 1
+            i += 1
+            continue
+        elif line.startswith(">"):                     # skip blockquote notes
+            i += 1
+            continue
         elif line.startswith("# "):                     # document title
             p = doc.add_paragraph()
             p.alignment = WD_ALIGN_PARAGRAPH.CENTER
@@ -274,5 +285,5 @@ def build(src: Path, out: Path):
 
 if __name__ == "__main__":
     src = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "thesis" / "task-book.md"
-    out = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "deliverables" / "毕业设计任务书-v1-20261027.docx"
+    out = Path(sys.argv[2]) if len(sys.argv) > 2 else ROOT / "deliverables" / "毕业设计任务书-v6-20261103.docx"
     print(build(src, out))

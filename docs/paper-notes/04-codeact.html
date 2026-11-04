@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>别让模型填 JSON：把智能体的动作直接写成可执行代码｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="a">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>第 04 篇 · CodeAct</span></div>
+    <h1>别让模型填 JSON：把智能体的动作直接写成可执行代码</h1>
+    <p class="en">Executable Code Actions Elicit Better LLM Agents</p>
+    <p class="byline"><strong>Xingyao Wang et al.</strong> · ICML 2024 · 原文 25 页</p>
+    <div class="chips">
+      <span class="chip hot">方法框架 + 自建基准</span>
+      <span class="chip">动作空间</span>
+      <span class="chip">与本课题关联 ★★★★☆</span>
+      <span class="chip">精读用时 ≈ 18 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>把智能体的每个动作从「填 JSON」换成「写一段可执行 Python」，在 82 个需要反复调用多个工具的复杂任务上成功率最高高出 20 个百分点、动作次数最多少 30%；真正起作用的是代码自带的控制流与数据流，而不是代码这个外形。</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>智能体要和外界打交道，先得约定「动作长什么样」。2023 年的主流做法是让模型输出 JSON，如 <span class="term">{"tool":"search","args":[…]}</span>。本文主张：<strong>让模型直接输出一段 Python，交给解释器执行，执行结果（含报错）再喂回去</strong>。作者在 17 个模型上做对照，结论是任务越复杂、越需要组合工具，代码动作的优势越大（p.2）。</p>
+  </div>
+
+  <p>放回时间线：ReAct 确立了「思考—行动—观察」循环，动作还是自然语言；2023 年工具学习工作把动作规范成 JSON，易解析但一次只能调一个工具；「用代码解题」的路线（PaL、ViperGPT）却是<strong>单轮</strong>的。CodeAct 卡在两者之间：保留多轮循环，把动作换成代码，上一轮结果真能被下一轮用上（p.14–15）。</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>先读 §2.1–§2.3（第 3–5 页），这是骨架；§A（第 14–15 页）讲它和之前用代码的工作差在哪；§H（第 24–25 页）是对 0 分结果的解剖，全文最诚实的一页。</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>让智能体「把三份 CSV 都下载、清空行、各画一张趋势图」。用 JSON 动作，它得调 <span class="term">download(url1)</span>，等框架把返回路径拼进下一轮 prompt，再调 <span class="term">clean(path1)</span>，再拼一次……三份文件就是九次动作加九次搬运，任何一次出错链就断。</p>
+
+  <p>作者把困难归为两条（p.1）：<strong>动作空间受限</strong>（只能落在预定义工具上）、<strong>灵活性受限</strong>（一次只能调一个工具）。工程上因此有三件麻烦事：表达「对所有元素做同一件事」要在框架层写循环；中间结果要靠 prompt 搬运；错误反馈要自己给每个工具写异常包装（p.3）。</p>
+
+  <div class="vs">
+    <div><h4>之前的做法（JSON / 文本动作）</h4><ul>
+      <li>一次一个工具，循环与条件要在框架层模拟（p.3）</li>
+      <li>中间结果靠框架抄回上下文，窗口被数据挤占</li>
+    </ul></div>
+    <div><h4>这篇的做法（代码即动作）</h4><ul>
+      <li>一段代码就是一个动作，循环条件写在代码里（p.2）</li>
+      <li>中间结果存变量，留在解释器里（p.2）</li>
+    </ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>JSON 动作像在餐厅点菜：一次一道，还得靠服务员（框架）把菜端到下一道工序。代码动作像给厨房递菜谱：能有条件有循环，洗好的菜放案板上，做错了厨房会喊「没淀粉了」。</p>
+  </div>
+</section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：一句话与一张图</h2>
+  <p>一句话：<strong>把智能体对外界的所有动作收敛成「一段可执行 Python + 它的执行结果」这一种格式</strong>，让动作描述、状态存储、错误报告三件事由同一种表示承担（p.3、p.4 图 2）。</p>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 316" role="img" aria-label="JSON 动作链与代码动作链的对比：前者每步都要框架搬运中间结果，后者把循环与中间结果留在解释器内">
+        <defs><marker id="ar4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/></marker>
+          <marker id="ar4b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#4f46e5"/></marker></defs>
+
+        <rect x="14" y="24" width="330" height="264" rx="12" fill="#fdeceb" stroke="#f5c9c4"/>
+        <text x="30" y="48" font-size="13" font-weight="700" fill="#b42318">JSON / 文本动作：一次一个工具</text>
+
+        <rect x="34" y="62" width="186" height="32" rx="7" fill="#ffffff" stroke="#e6e2d9"/>
+        <text x="42" y="83" font-size="11.5" fill="#191c1f">动作 1：调用 download(url1)</text>
+        <line x1="224" y1="78" x2="256" y2="78" stroke="#6b7280" stroke-width="1.4" marker-end="url(#ar4)"/>
+        <text x="262" y="75" font-size="10.5" fill="#6b7280">框架把返回</text>
+        <text x="262" y="88" font-size="10.5" fill="#6b7280">值抄进 prompt</text>
+
+        <rect x="34" y="118" width="186" height="32" rx="7" fill="#ffffff" stroke="#e6e2d9"/>
+        <text x="42" y="139" font-size="11.5" fill="#191c1f">动作 2：调用 clean(path1)</text>
+        <line x1="224" y1="134" x2="256" y2="134" stroke="#6b7280" stroke-width="1.4" marker-end="url(#ar4)"/>
+        <text x="262" y="131" font-size="10.5" fill="#6b7280">再抄一次，</text>
+        <text x="262" y="144" font-size="10.5" fill="#6b7280">上下文越来越长</text>
+
+        <rect x="34" y="174" width="186" height="32" rx="7" fill="#ffffff" stroke="#e6e2d9"/>
+        <text x="42" y="195" font-size="11.5" fill="#191c1f">动作 3：调用 plot(path1)</text>
+
+        <text x="34" y="238" font-size="11.5" fill="#b42318">三份文件 → 九次动作 + 九次框架搬运</text>
+        <text x="34" y="258" font-size="11.5" fill="#6b7280">错在搬运还是错在工具，模型分不清</text>
+        <text x="34" y="278" font-size="11.5" fill="#6b7280">循环与条件要在框架层另写代码模拟</text>
+
+        <line x1="356" y1="24" x2="356" y2="288" stroke="#e6e2d9" stroke-dasharray="4 4"/>
+
+        <rect x="374" y="24" width="332" height="264" rx="12" fill="#eef0fe" stroke="#c7cbf5"/>
+        <text x="390" y="48" font-size="13" font-weight="700" fill="#4f46e5">代码动作：一个动作 = 一段程序</text>
+
+        <rect x="390" y="60" width="300" height="96" rx="8" fill="#ffffff" stroke="#c7cbf5"/>
+        <text x="400" y="78" font-size="11" font-family="Consolas,monospace" fill="#3d4450">for u in urls:          # 循环在代码里</text>
+        <text x="400" y="96" font-size="11" font-family="Consolas,monospace" fill="#3d4450">    df = load(u)       # 中间结果存变量</text>
+        <text x="400" y="114" font-size="11" font-family="Consolas,monospace" fill="#3d4450">    res.append(clean(df))</text>
+        <text x="400" y="132" font-size="11" font-family="Consolas,monospace" fill="#3d4450">print(summarize(res))  # 只回结论</text>
+        <text x="400" y="150" font-size="10.5" fill="#6b7280">一个动作覆盖三份文件</text>
+
+        <line x1="540" y1="158" x2="540" y2="184" stroke="#4f46e5" stroke-width="1.5" marker-end="url(#ar4b)"/>
+        <rect x="452" y="188" width="176" height="34" rx="8" fill="#ffffff" stroke="#4f46e5" stroke-width="1.4"/>
+        <text x="540" y="210" text-anchor="middle" font-size="12" fill="#191c1f">Python 解释器（沙箱）</text>
+
+        <path d="M452 205 L404 205 L404 168" fill="none" stroke="#0f766e" stroke-width="1.5" marker-end="url(#ar4b)"/>
+        <text x="390" y="238" font-size="11" fill="#0f766e">执行结果 / traceback 回灌</text>
+        <text x="390" y="258" font-size="11" fill="#6b7280">中间结果留在解释器内存，不回上下文</text>
+        <text x="390" y="278" font-size="11" fill="#6b7280">报错由环境自动产生，不用人工转述</text>
+      </svg>
+    </div>
+    <figcaption>图 1　两种动作空间的差别不在「写法」，而在中间状态存在哪里：前者推进上下文窗口（左），后者留在解释器里（右）。</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p><strong>组合性把 N 步压成 1 步。</strong>一次动作里可以循环调同一工具 N 次、按条件走分支（p.2）。效果可测：M³ToolEval 上 gpt-4-1106-preview 用代码动作平均 5.5 轮，用文本动作 7.6 轮（p.5）。轮数少不只是「快」——每一轮都可能跑偏。</p>
+    <p><strong>中间结果有地方放。</strong>这条最容易被忽略，也最关键。JSON 动作必须把上一步输出写进下一轮 prompt，窗口里塞满数据本身；代码动作把 <span class="term">df</span>、<span class="term">res</span> 放在解释器内存，只有 <span class="term">print</span> 出来的才回到对话（p.2）。任务越长，差别越致命。</p>
+    <p><strong>错误反馈是免费的。</strong>Python 的异常机制本来就把「哪里错、错在哪个类型」组织成可读文本，这段文本直接就是观察（p.3 表 1）。自我纠错于是不需要额外工程：模型看到 <span class="term">AttributeError</span>，下一轮就换函数（p.6 图 3 有四轮自纠实例）。</p>
+    <p><strong>模型本来就熟悉代码。</strong>预训练语料里代码占比高，不需要 few-shot 就能 import 对库（p.6 图 3 说没提供任何演示），这解释了开源模型为何能立刻用上。</p>
+    <p>四条合起来：<strong>代码是可执行的中间表示，同时承担动作描述、状态存储、错误报告三件事；JSON 只承担第一件，另两件要框架补，补得越多越容易出错。</strong>所以原子任务上几乎没差别，组合型任务才拉开（p.2、p.5）。</p>
+  </div>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：它到底怎么做的</h2>
+  <p>全文有四个部件：交互框架、两个对照实验、数据合成流程、微调与评测。</p>
+
+  <ol class="steps">
+    <li><b>交互框架：agent / user / environment 三角色</b>每轮 agent 收到 observation（用户指令或执行结果），可选先用思维链规划，再发出 action。发给环境的是 <span class="term">&lt;execute&gt;…&lt;/execute&gt;</span> 包裹的 Python，回执是返回值、stdout 或异常（p.3）。</li>
+    <li><b>对照实验一：API-Bank 原子调用</b>只要求生成<strong>一次</strong>工具调用，分别用 Python 调用、JSON、固定格式文本三种写法，故意把控制流优势消融掉，只测「模型对哪种格式更熟」（p.4）。</li>
+    <li><b>对照实验二：M³ToolEval</b>自建 82 题，覆盖网页浏览、金融、行程、科学、信息处理五域，每题配一套手工工具；判分为精确匹配，上限 10 轮（p.4）。</li>
+    <li><b>数据合成与微调</b>用 HotpotQA、MATH、APPS 等五个数据集生成四类轨迹，再启发式筛选，得 7,139 条、约 1,058 万 token 的 CodeActInstruct（p.7 表 4）；微调时混入 69,230 条通用对话防退化（p.7）。</li>
+  </ol>
+
+  <h3>筛选规则比数据规模更讲究</h3>
+  <p>数据筛选最能说明作者理解问题（p.18）。只保留三类轨迹：确实用了代码动作的；<strong>「先出错、后改对」</strong>的；轮数为偶数（奇数说明没按指令回话）。同时删掉一类看似「成功」的样本——全程报错、最后却答对了，因为不能让模型学会「一直执行错代码也能蒙对」。这把自我纠错从技巧变成可训练的技能。</p>
+
+  <div class="callout warn">
+    <span class="tag">容易误读</span>
+    <p>CodeAct <strong>不是</strong>「让模型写代码解题」。PaL、ViperGPT 也写代码，但都是<strong>单轮</strong>的：写完跑一次，不对就判失败（p.14）。CodeAct 的关键在「多轮」——执行结果回到上下文，下一段代码据此改写上一段思路。</p>
+  </div>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：数字说明什么</h2>
+  <p>两层实验：API-Bank 测「单次原子调用写得对不对」，是控制组；M³ToolEval 测「多轮复杂任务能不能做完」，是实验组。指标为成功率与平均轮数，17 个模型全跑一遍（p.1、p.4）。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">20%</div><div class="k">复杂任务上的最高绝对提升（p.2）</div></div>
+    <div class="stat"><div class="v">30%</div><div class="k">动作次数的最多减少幅度（p.2）</div></div>
+    <div class="stat"><div class="v">12/17</div><div class="k">代码动作成功率最高的模型数（p.5）</div></div>
+    <div class="stat"><div class="v">82</div><div class="k">M³ToolEval 题量（p.2）</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　M³ToolEval 上的成功率与平均交互轮数（数据取自原文 p.5 表 3）</caption>
+      <thead><tr><th>模型</th><th>CodeAct 成功率</th><th>JSON</th><th>Text</th><th>CodeAct 轮数</th><th>JSON 轮数</th><th>Text 轮数</th></tr></thead>
+      <tbody>
+        <tr><td>gpt-4-1106-preview</td><td class="num best">74.4</td><td class="num">52.4</td><td class="num">53.7</td><td class="num best">5.5</td><td class="num">7.6</td><td class="num">7.7</td></tr>
+        <tr><td>gpt-4-0613</td><td class="num best">67.1</td><td class="num">56.1</td><td class="num">45.1</td><td class="num best">6.6</td><td class="num">7.6</td><td class="num">8.0</td></tr>
+        <tr><td>claude-2</td><td class="num best">54.9</td><td class="num">39.0</td><td class="num">29.3</td><td class="num best">7.2</td><td class="num">8.3</td><td class="num">8.5</td></tr>
+        <tr><td>gpt-3.5-turbo-0613</td><td class="num best">51.2</td><td class="num">26.8</td><td class="num">20.7</td><td class="num best">7.0</td><td class="num">8.8</td><td class="num">9.2</td></tr>
+        <tr><td>lemur-70b-chat-v1</td><td class="num">13.4</td><td class="num best">15.9</td><td class="num">12.2</td><td class="num best">9.1</td><td class="num">9.3</td><td class="num">9.4</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>读表要看两个方向。横向看，gpt-4-1106-preview 从 53.7% 到 74.4%，是 20.7 个百分点的绝对差，同时少用 2.1 轮（p.5）；claude-2 更夸张（29.3 → 54.9）。纵向看，只有 lemur-70b-chat-v1 是 JSON 反超（15.9 vs 13.4），这正是「12/17 而非 17/17」的来源——<strong>优势是统计性的，不是普适的</strong>。</p>
+
+  <p>再看控制组。API-Bank 单次原子调用上，代码动作与文本动作基本打平，Mistral-7B 甚至略输（2.5% vs 3.0%，p.5 表 2）。这个「没有优势」的结果最有力：它说明 20% 的提升<strong>不是格式带来的</strong>，而是控制流与数据流在复杂任务上带来的（p.2）。</p>
+
+  <p>微调部分要分开看。Mistral-7B 微调成 CodeActAgent 后 MINT 域内从 18.8 提到 57.4，同尺寸最强基线只有 25.6（p.8 表 5），提升是实质的。但 Llama-2-7B 变体在 M³ToolEval 上是 <span class="term">0.0</span>；作者发现模型吐出训练数据里不存在的怪异片段，怀疑来自预训练语料或底座本身弱（p.24–25）——<strong>一个没解释清楚的负结果</strong>。</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <ul>
+    <li><b>作者自述：</b>一是幻觉——模型可能「想象」变量内容而不真的 <span class="term">print</span> 出来；二是安全——代码动作直接给了模型在沙箱里自由执行代码的权限，最坏情况下可能突破沙箱（p.9）。</li>
+    <li><b>外部质疑：</b>同期软件工程方向的工作走的是<strong>相反</strong>的路——不是扩大动作自由度，而是收敛成少量受控命令，理由是自由代码更易跑偏、更难审计。这不是本文承认的，是我读出的张力。</li>
+    <li><b>我的判断一：</b>M³ToolEval 是自建 82 题，题目由作者挑选、判分用精确匹配。题目分布是否代表真实复杂任务无从检验；精确匹配会把「算对了但格式不对」判错，且惩罚对两种格式并不对称。论文没报告人工复核，20% 的<strong>外部效度</strong>偏弱。</li>
+    <li><b>我的判断二：</b>「up to 20%」常被引成「提升 20%」，是误读：它是最优模型上的<strong>最大绝对</strong>提升，不是平均值，分布是 12/17（p.5）。综述里用这个数必须连着「12/17」。</li>
+    <li><b>我的判断三：</b>安全那段只有一段话，把「沙箱」当既定前提，没讨论权限边界与文件写入范围。对要做<strong>事后审计</strong>的系统这很要命：动作既然是任意代码，工具调用记录就不能只记工具名。</li>
+  </ul>
+</section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p>本篇对本课题最直接的用处是<strong>定义工具调用（ToolCall）实体的字段</strong>。开题报告 §2.1（三）研究内容第（1）条要求 ToolCall 记录「谁在什么上下文里调用了什么」，本文给了现成答案：<strong>动作 = 代码原文 + 执行观察 + 退出状态</strong>。实现上 <span class="term">tool_calls</span> 表至少要有 <span class="term">action_code</span>（原始代码，而非解析后的工具名）、<span class="term">observation</span>、<span class="term">exit_status</span>；少了前者，一旦动作里含循环，事后就无法还原「这一次对几个文件动了手」。</p>
+    <p>第二处是开题报告 §2.2（四）「关键设计」里的六步归一化：智能体给的是「意图片段」（Edit 的旧串→新串），要变成可比较的 hunk。本文从反面印证了难点：<strong>动作越自由，从动作到变更的映射越难做</strong>，所以本课题把「一个 ToolCall 产生多个 hunk」定为 1:N。</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p>ToolCall 记「代码原文 + 执行输出 + 退出状态」；把 stderr / traceback 当一等证据而非日志噪声——它是「验证依据」里最便宜的那一半。</p></div>
+    <div class="card"><h4>可对照</h4><p>它对「一轮交互」的定义（observation → 思维链 → action）可与本课题 Turn / Message / ToolCall 的划分对齐。</p></div>
+    <div class="card"><h4>要避开</h4><p>不能引它支撑「任务边界判定」或「中断恢复」——它没有任务概念，一次会话就是一个任务；也不能引它证明「事件流覆盖多来源」，它只跑过一种环境。</p></div>
+  </div>
+
+  <p>落到写作：第 2 章综述讲「智能体能力」时，这篇放在「动作空间标准化」支线上，引出「动作格式影响可审计性」；第 3 章讲信息模型时，引它说明「ToolCall 为何必须保留原始动作文本」。但它<strong>不能</strong>支撑 RQ1 的覆盖率论证——RQ1 要的是「一种真实智能体来源的全部事件类型」，而本文只跑过 Python 解释器，与 Claude Code 那种带 Git、测试的工程环境不是一回事。</p>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+
+  <blockquote>
+    <p>Our extensive analysis of 17 LLMs on API-Bank and a newly curated benchmark shows that CodeAct outperforms widely used alternatives (up to 20% higher success rate).</p>
+    <p>我们在 API-Bank 与新基准上分析了 17 个模型，代码动作优于常用替代方案，成功率最高高出 20%。</p>
+    <span class="src">— 原文 p.1</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Compared to JSON and text with a pre-defined format, code inherently supports control and data flow, allowing for the storage of intermediate results as variables for reuse.</p>
+    <p>与预定义格式的 JSON 和文本相比，代码天生支持控制流与数据流，中间结果可存成变量复用。</p>
+    <span class="src">— 原文 p.2</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Since CodeAct directly grants access for the agent to freely execute code in a sandbox environment, in the worst scenario … such an agent may potentially break free of the sandbox restriction and cause harm to the world through cyber-attack.</p>
+    <p>由于代码动作把「在沙箱里自由执行代码」的权限交给智能体，最坏情况下它可能突破沙箱、通过网络攻击造成危害。</p>
+    <span class="src">— 原文 p.9</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>动作空间 <span class="term">action space</span></dt>
+    <dd>智能体可发出的动作集合。它决定本课题「工具调用」能记到什么粒度：动作是 JSON 就记工具名与参数，是代码就得记原文。</dd>
+
+    <dt>代码即动作 <span class="term">CodeAct</span></dt>
+    <dd>用一段可执行 Python 作为智能体的一个动作，执行结果（含异常）作为观察。与「代码生成」的区别是它多轮、可据观察改写后续动作。</dd>
+
+    <dt>控制流 / 数据流 <span class="term">control flow / data flow</span></dt>
+    <dd>前者指 if、for 这类决定「执行几次、走哪条路」的结构；后者指一个工具的输出作为另一个工具的输入。JSON 动作靠框架模拟，代码里是原语。</dd>
+
+    <dt>M³ToolEval</dt>
+    <dd>本文自建的 82 题基准，专测需多轮多工具组合的复杂任务，判分为精确匹配，上限 10 轮（p.4）。</dd>
+
+    <dt>CodeActInstruct</dt>
+    <dd>本文合成的多轮交互轨迹数据集，7,139 条、约 1,058 万 token，覆盖信息检索、软件包使用、外部记忆、机器人规划四类用途（p.7 表 4）。</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>代码动作既然更好，为什么还要专门做 API-Bank 那个「没有优势」的实验？</summary><p>因为它是<strong>控制组</strong>。若代码动作在原子调用上也大幅领先，说明优势来自「模型更熟代码格式」，与多轮、组合无关，全文因果就站不住。结果恰恰是打平甚至略输（p.5 表 2），反而把结论钉得更死。</p></details>
+
+    <details><summary>为什么 CodeActAgent 在 M³ToolEval 上是 0 分，在 MINT 上却是 57.4？</summary><p>差别在「需不需要零样本使用没见过的工具集」：MINT 域内任务与训练数据重叠，M³ToolEval 是全新工具、零样本、精确匹配。作者猜测是预训练语料 artifact 或底座弱（p.24–25），但没做消融区分。</p></details>
+
+    <details><summary>这篇的结论能直接搬到「改真实代码仓库」吗？</summary><p>不能。它的任务都是「用工具算出一个答案」，副作用只发生在沙箱内；真实仓库里的动作留下持久化变更，要考虑行号漂移、多文件依赖、回滚。本课题关心的「变更溯源」在这里没有对应物——这正是 CodeAct 的边界：它解决「动作怎么表达」，不解决「动作留下的痕迹怎么组织」。</p></details>
+  </div>
+</section>
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="03-openhands.html"><span class="dir">← 上一篇</span>OpenHands</a>
+    <a href="05-metagpt.html" style="text-align:right"><span class="dir">下一篇 →</span>MetaGPT</a>
+  </div>
+</div>
+
+<footer>
+  《CodeAct》精读笔记 · 基于 ICML 2024 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

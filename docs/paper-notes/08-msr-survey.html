@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>给仓库挖掘画一张能看出空缺的地图｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="c">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>第 08 篇 · MSR Survey</span></div>
+    <h1>在方法泛滥之前，先给这个领域画一张能看出空缺的地图</h1>
+    <p class="en">A Survey and Taxonomy of Approaches for Mining Software Repositories in the Context of Software Evolution</p>
+    <p class="byline"><strong>Huzefa Kagdi, Michael L. Collard, Jonathan I. Maletic</strong> · J. Softw. Maint. Evol.: Res. Pract. 2007 · 原文 55 页</p>
+    <div class="chips">
+      <span class="chip hot">综述与分类框架</span>
+      <span class="chip">软件演化 · 仓库挖掘</span>
+      <span class="chip">与本课题关联 ★★★★☆</span>
+      <span class="chip">精读用时 ≈ 20 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>它把约 80 项仓库挖掘研究压进"演化对象—目的—表示—信息源"四层坐标，得到的不是技术清单而是一张问题地图；地图上最要紧的一条注记是——源码变更、缺陷报告与邮件讨论之间通常没有任何显式链接，而这正是所有跨源分析绕不过去的缺口。</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>2007 年前后，仓库挖掘已经有一大批论文，但大家各说各话：有人挖版本日志、有人挖缺陷库、有人挖邮件列表；粒度从文件、行一直到函数、变量。没有共同术语，也说不清两项研究到底像不像（原文 p.3）。这篇做了两件事：把约 80 项研究（p.4）按"挖什么仓库、为什么挖、怎么挖、怎么评价"四个维度整理出来；再归纳出四层分类法，并证明它表达力够用、能支持比较（p.9）。<mark>它的价值不在结论，而在地图本身——地图让"没人做过什么"第一次变得可见。</mark></p>
+  </div>
+
+  <p>放回时间点看更清楚。它之前，这个领域最著名的是 Lehman 等人对若干 IBM 产品的长期观测，产出的是软件演化定律与度量（p.2）；其余多是"用一个仓库回答一个问题"的单点研究。它之后，MSR 才有了公共坐标：你可以说"我做 artifact 级、PQ 类问题、逻辑粒度、以元数据为信息源"，别人立刻知道你站在哪。今天还值得读，恰恰因为它<strong>不是技术综述</strong>——具体方法早被更好的工具取代，但"数据源分散、跨源无链接、细粒度表示缺失"这三个判断没有过期，在代码智能体时代反而更严重。</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>55 页不要通读。先读 p.4 第 2 节（四个维度），再读 p.8–p.9 第 3 节（分类法及其自我验证），然后跳到 p.15 的 Table IV（按 10 类演化任务重排的文献表，全篇信息密度最高）。第 4 节只精读 4.1.1 逻辑耦合、4.1.2 变更预测、4.1.3 修复诱导变更三小节。最后必读 p.48 第 5 节，那是作者自己的判断。</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>设想你 2006 年入场，想研究"缺陷修复类变更有什么特征"。一项研究用版本库的提交注释加正则判断哪些是修 bug，结论是修复类变更涉及的文件数比新增功能类少；另一项用缺陷库反查关联提交，结论是修复诱导的变更规模约为普通变更的三倍（p.18）。两个结论看似矛盾，其实只是<strong>对"什么算一次变更"的定义不同</strong>——后者先用滑动窗口把零散改动聚成事务再算。而 CVS 本身"不把跨多个文件的若干修改维护为一个逻辑变更，因此开发者原本的提交操作已经丢失"（p.5）。</p>
+
+  <p>更深的问题是数据源之间的关系。原文 p.5 写得很直接：这些仓库"大多数是各自孤立地被管理和运营的，彼此之间没有显式的直接关系"，例如缺陷跟踪系统里的某条 bug 与源码库中对应的变更之间，<strong>通常不维护任何显式信息</strong>。这就是本课题"信息分散"问题在 2007 年的经典表述。作者还给出一个立场：软件演化的基本单位是源码变更，其他信息都是"用来帮助理解、解释和管理源码变更的"（p.5）。这句话既是分类法的地基，也埋下了它的局限——它天然把验证依据（测试结果）排除在核心之外。</p>
+
+  <div class="vs">
+    <div><h4>之前的做法</h4><ul>
+      <li>单点研究：一项工作挖一个仓库、答一个问题，彼此不可比</li>
+      <li>没有共同术语，只能口头描述"用没用 CVS、粒度是文件还是函数"</li>
+      <li>已有三个小综述各管一段：工具可用性、程序匹配、变更管理工具分类</li>
+      <li>数据源集成被视为工程细节，被排除在方法讨论之外</li>
+    </ul></div>
+    <div><h4>这篇的做法</h4><ul>
+      <li>四个维度统一定义：what / why / how / quality</li>
+      <li>四层分类法：演化对象 → 目的 → 表示 → 信息源</li>
+      <li>三张表按研究对象重排，一张表按 10 类任务重排</li>
+      <li>把跨源无链接、细粒度缺失、缺验证标准写成明确的开放问题</li>
+    </ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>这像给一个没有分类法的图书馆编目。书都在，读者也在读，但没人能回答"这个馆在哪个门类上是空的"。分类法一建立，价值立刻显现：你不仅找得到书，还能看出<strong>缺口</strong>，而缺口就是选题。最实用的读法就是把它当缺口清单：Table I 里研究"变更本身"的条目远少于 Table II 里研究"性质变化"的条目，这个不对称本身就是信号。</p>
+  </div>
+</section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：一句话与一张图</h2>
+  <p><strong>一句话：</strong>把任何一项仓库挖掘研究投影到"演化对象—目的—表示—信息源"四层坐标上，再用几张表把文献排开，于是"两项研究像不像""哪一格是空的"都变成可以指认的事情。</p>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 330" role="img" aria-label="MSR 四层分类法示意，以及源码与元数据之间缺失的链接">
+        <defs><marker id="a8" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/></marker></defs>
+
+        <rect x="110" y="14" width="286" height="42" rx="9" fill="#fbf1dc" stroke="#a16207" stroke-width="1.4"/>
+        <text x="253" y="32" text-anchor="middle" font-size="12" fill="#191c1f">① 对象：artifacts 变更本身</text>
+        <text x="253" y="48" text-anchor="middle" font-size="11" fill="#6b7280">"这次改动做了什么"</text>
+
+        <rect x="410" y="14" width="290" height="42" rx="9" fill="#fbf1dc" stroke="#a16207" stroke-width="1.4"/>
+        <text x="555" y="32" text-anchor="middle" font-size="12" fill="#191c1f">① 对象：properties 性质变化</text>
+        <text x="555" y="48" text-anchor="middle" font-size="11" fill="#6b7280">"规模/复杂度/缺陷率怎么变"</text>
+
+        <rect x="110" y="72" width="590" height="42" rx="9" fill="#ffffff" stroke="#a16207" stroke-width="1.4"/>
+        <text x="405" y="90" text-anchor="middle" font-size="12" fill="#191c1f">② 目的：把研究意图翻译成可回答的问题</text>
+        <text x="405" y="106" text-anchor="middle" font-size="11" fill="#6b7280">MBQ「A 改了还会连带改什么」 · PQ「某函数被加/删/改了吗、有多少被复用」</text>
+
+        <rect x="110" y="130" width="590" height="42" rx="9" fill="#ffffff" stroke="#a16207" stroke-width="1.4"/>
+        <text x="405" y="148" text-anchor="middle" font-size="12" fill="#191c1f">③ 表示：物理级（文件、行号） ⇄ 逻辑级（类、方法、变量）</text>
+        <text x="405" y="164" text-anchor="middle" font-size="11" fill="#6b7280">仓库只给物理级；问题往往要逻辑级 —— 鸿沟就在这里</text>
+
+        <rect x="110" y="212" width="180" height="52" rx="9" fill="#e7f5f2" stroke="#0f766e" stroke-width="1.4"/>
+        <text x="200" y="234" text-anchor="middle" font-size="12" fill="#191c1f">④ 源码版本</text>
+        <text x="200" y="251" text-anchor="middle" font-size="11" fill="#6b7280">artifacts</text>
+
+        <rect x="315" y="212" width="180" height="52" rx="9" fill="#e7f5f2" stroke="#0f766e" stroke-width="1.4"/>
+        <text x="405" y="234" text-anchor="middle" font-size="12" fill="#191c1f">④ 差异 deltas</text>
+        <text x="405" y="251" text-anchor="middle" font-size="11" fill="#6b7280">differences</text>
+
+        <rect x="520" y="212" width="180" height="52" rx="9" fill="#e7f5f2" stroke="#0f766e" stroke-width="1.4"/>
+        <text x="610" y="234" text-anchor="middle" font-size="12" fill="#191c1f">④ 元数据</text>
+        <text x="610" y="251" text-anchor="middle" font-size="11" fill="#6b7280">提交注释 / 缺陷 / 邮件</text>
+
+        <line x1="200" y1="212" x2="200" y2="176" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a8)"/>
+        <line x1="405" y1="212" x2="405" y2="176" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a8)"/>
+        <line x1="610" y1="212" x2="610" y2="176" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a8)"/>
+        <line x1="405" y1="130" x2="405" y2="118" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a8)"/>
+        <line x1="405" y1="72" x2="405" y2="60" stroke="#6b7280" stroke-width="1.5" marker-end="url(#a8)"/>
+
+        <path d="M200 208 C 200 186, 610 186, 610 208" fill="none" stroke="#b42318" stroke-width="1.8" stroke-dasharray="6 4"/>
+        <text x="405" y="196" text-anchor="middle" font-size="11.5" fill="#b42318">✗ 通常没有显式链接（原文 p.5）</text>
+
+        <text x="360" y="296" text-anchor="middle" font-size="11.5" fill="#6b7280">分类法的用处：把"某研究在哪一格"与"哪一格没人"同时说清楚</text>
+      </svg>
+    </div>
+    <figcaption>图 1　四层分类法与它暴露出的那个缺口。层③与层④之所以要分开，正因为仓库给的是物理级表示，而问题要的是逻辑级；红色虚线是本课题要补的那一段。</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p><strong>为什么这样设计就 work？</strong>三个理由，逐层递进。</p>
+    <p><strong>① 降维把"像不像"变成"取值比一比"。</strong>研究空间本来是开放的（任何仓库、任何问题、任何方法），分类法把它压成四层、每层若干取值。于是比较两项研究不再需要读懂细节，只看四个维度取值是否一致。原文用"表达力"（能表示各类研究）与"有效性"（能看出异同）两条标准自我验证（p.9），并用三张表实际检查了每项工作在四层上都有落点（p.10）。</p>
+    <p><strong>② 层③与层④的分离，是整张地图最有洞察力的一刀。</strong>若把"信息源"与"表示"合成一层，就看不出问题；分开后立刻可见：仓库里存的是文件和行号，而大多数有价值的问题（哪些类耦合、哪个方法被复用）需要逻辑级表示。<mark>这个"表示鸿沟"是后续二十年工作的主战场</mark>——语法树差分、方法级历史重建、语义变更分类，全在往这一格里填。</p>
+    <p><strong>③ 按任务重排的表让"研究投入的分布"变得可见。</strong>原文把文献重新归到 10 类演化任务下（p.15），一眼能看出哪类被反复研究（演化耦合、变更理解），哪类相对冷清。这比按方法分类更有用，因为读者关心的是任务，不是方法。</p>
+  </div>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：它到底怎么做的</h2>
+  <p>综述的方法论常被忽略，但这一篇值得学，因为它把综述做成了可复现的流程。</p>
+
+  <ol class="steps">
+    <li><b>划范围：只要"多版本/含时序"的研究</b>输入是 2006 年 8 月前的文献，来源包括 2004—2006 三届 MSR 研讨会、2005 年 7 月的 TSE 专刊，以及 ASE、ICSE、ICSM（p.4）。筛除规则很硬：只考察单一版本的不算，"只是恰好用了数据挖掘技术"的分析方法研究也不算（p.2）。<strong>还有两类被明确排除</strong>——把多仓库集成到关系库的工作，以及从零散改动反推提交事务的算法，理由是它们"只改变数据怎么获得，不改变研究的 purpose、method 或 evaluation"（p.5）。这个决定后来成了它最大的盲区。</li>
+    <li><b>定维度：四个问题定义一切</b>用了哪些仓库（what）、为什么挖（why）、用什么方法（how）、怎么评价质量（quality）（p.4）。作者特意声明四者没有先后与优先级，因为 MSR 当时"没有已定义的过程模型"（p.4）。</li>
+    <li><b>归纳分类法并自我验证</b>从文献中提取共性，归纳出四层：演化对象、目的、表示、信息源（p.8）。验证方式是套回全部被综述工作，检查每项在四层上是否都有落点（表达力）、能否据此看出异同（有效性）（p.9–p.10）。</li>
+    <li><b>按方法组织正文，按任务重排表格</b>正文从"元数据分析"这种最传统的方法讲起，过渡到借来的技术（数据挖掘、信息检索、可视化），最后是新的实验性方法（p.10–p.11）。三张表按研究对象分（变更本身 / 性质变化 / 两者兼有），第四张表按 10 类任务重排。</li>
+  </ol>
+
+  <h3>三个代表性子类，看它怎么"读"一项研究</h3>
+  <p><strong>（一）逻辑耦合。</strong>Gall 等人从版本历史找"总是一起改"的类：同一时间戳（四分钟窗口内）且同一作者的改动被推断为存在依赖；数据是某工业 Java 系统的 28 个发布、累计 500 KLOC（p.16）。Fischer 等人走到跨仓库：把版本日志与缺陷库整合进一个 SQL 库，用正则把提交注释映射到缺陷报告；Mozilla 历史里有 433 833 条修改记录，其中 23 540 条被识别为关联到缺陷报告，共找到 158 491 处引用，项目共 56 个发布；有一个文件关联了 33 条缺陷报告，进而与 456 个其他文件形成耦合（p.17）。<strong>这组数字说明跨源关联一旦建立能撑出多大的分析面</strong>，但也暴露了它的脆弱：靠正则匹配注释里的编号，漏一条就断一条边。</p>
+  <p><strong>（二）变更预测。</strong>Hassan 与 Holt 用多种启发式预测"某个实体改了，还有哪些该改"，在 5 个 C 语言开源项目上评测，最好的平均精确率与召回率分别是 12%（基于文件）与 87%（基于历史），而调用/使用/定义启发式只有 2% 与 42%（p.17）。<strong>精确率 12% 这个数字很重要</strong>：它说明仅靠元数据的预测在当年基本不可用，也解释了后续研究为何纷纷转向源码感知的细粒度表示。</p>
+  <p><strong>（三）修复诱导变更。</strong>Sliwerski 等人用滑动窗口把零散改动聚成事务，再用注释与缺陷描述的正则匹配找出"修 bug"的事务，然后回溯到引入这些行的更早变更。数据是 Eclipse 的 78 954 个事务与 Mozilla 的 109 658 个事务（截至 2005 年 1 月）；"修复又引发后续修复"的事务平均规模为 3.82，修复诱导事务整体约为非修复诱导事务的三倍大，且 Eclipse 在周六、Mozilla 在周五引入此类变更的风险最高（p.18）。</p>
+
+  <div class="callout warn">
+    <span class="tag">容易误读</span>
+    <p>别把它当"MSR 技术大全"。它是一张<strong>坐标系</strong>：告诉你某项工作站在哪一格，不告诉你那项工作做得好不好。那些表列的是"用了什么表示、什么信息源、什么技术、解决什么任务"，没有一列是效果。想判断方法优劣，得回到被引的原始论文看评测设置。</p>
+  </div>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：数字说明什么</h2>
+  <p>综述没有自己的实验，"结果"分两部分：分类法的验证（见上节），以及它转述的实证数字。后者是本篇最可引用的部分。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">≈80</div><div class="k">被综述的研究数（p.4、p.50）</div></div>
+    <div class="stat"><div class="v">4</div><div class="k">分析维度：what/why/how/quality（p.4）</div></div>
+    <div class="stat"><div class="v">4</div><div class="k">分类法层数（p.8）</div></div>
+    <div class="stat"><div class="v">10</div><div class="k">演化任务类别（p.15）</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　综述中三组代表性实证数据（均转述自原文）</caption>
+      <thead><tr><th>研究</th><th>数据源与规模</th><th>关键数字</th><th>它证明了什么</th></tr></thead>
+      <tbody>
+        <tr><td>Fischer 等：跨仓库耦合</td><td>Mozilla 的版本日志 + 缺陷库（p.17）</td><td class="num">433 833 条修改 / 23 540 条关联 / 158 491 处引用 / 56 个发布</td><td>跨源关联建立后，可把"文件—缺陷—耦合文件"串起来</td></tr>
+        <tr><td>Hassan 与 Holt：变更预测</td><td>5 个 C 项目元数据（p.17）</td><td class="num">精确率 12%（文件级）/ 召回率 87%（历史）</td><td>纯元数据预测精确率极低，倒逼转向源码感知的表示</td></tr>
+        <tr><td>Sliwerski 等：修复诱导变更</td><td>Eclipse 78 954 个事务、Mozilla 109 658 个（p.18）</td><td class="num">规模 ≈ 普通变更的 3 倍；平均 3.82</td><td>历史数据可做风险预警，但前提是先把改动聚成事务</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>三行数字其实讲的是同一个故事的三段：第一段说"关联有价值"，第二段说"只有元数据不够"，第三段说"要得到可靠结论，先得把数据整理成正确的单位"。这三段合起来正好解释本课题为什么要做统一事件表示——如果连"一次变更"的边界都定义不清，后面所有统计都是在噪声上做算术。</p>
+
+  <p>还要注意精确率 12% 与召回率 87% 的极端不平衡（p.17）。这不是选错阈值，而是元数据的信噪比决定的：注释里提到"fix"的未必是修 bug，没提的也可能是。原文对这类结果的评价很克制，只说"最好的平均精确率与召回率分别是 12% 与 87%"，没有拔高。<strong>这种克制值得学</strong>：报告一个难看的数字并解释它为什么难看，比只报好看的那个更有信息量。</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <p>它的局限不在"做错了"，而在"它选择不看的东西"，以及十九年时间带来的整体位移。</p>
+  <ul>
+    <li><b>作者自述：</b>第 5 节列出三个必须解决的问题——要能在细粒度实体上挖掘；需要"该考虑多少个版本"的明确指引；必须建立验证标准（p.48）。5.2 节对第二点相当清醒：回溯太远会引入无关信息（一个 1000 个版本的假想系统，前 50 个版本的信息对预测第 1001 个可能完全无关），太近又会漏掉正在进行的重构，"该挖多少个版本取决于任务与系统当前所处的阶段"（p.49）。5.3 节还指出，两项独立研究是否在问等价的问题，目前根本看不出来，因此呼吁比较框架与基准（p.49）。</li>
+    <li><b>外部质疑（时代层面）：</b>它的数据源是版本库、缺陷库、邮件列表三件套，指标主要是从信息检索借来的精确率与召回率（p.7–p.8）。今天一次变更的上下文还包括代码评审、持续集成结果、即时通讯与工单流转，更不用说智能体的会话与工具调用日志——这些在 2007 年的分类法里连一个格子都没有。</li>
+    <li><b>我的判断一：它主动排除的那一块，恰好是本课题的全部。</b>原文明确把"把多个仓库集成到统一信息源"的工作排除在综述之外，理由是"只改变数据怎么获得，不改变研究的 purpose、method 或 evaluation"（p.5）。这个理由在评价研究方法时成立，但本课题关心的正是"怎么获得、怎么关联"——也就是说，<strong>它能证明"跨源关联缺失是公认问题"，却不能提供任何关联方法的评价</strong>。引用时必须补上这句，否则就是把"问题存在"偷换成"解法有效"。</li>
+    <li><b>我的判断二：分类法是描述性的，不能当评估框架。</b>它能回答"这两项研究在同一格吗"，不能回答"这个系统比那个好吗"。本课题若要评价自己的系统，必须另建指标体系（开题报告表 2-3 的 M1–M11 就是另建的）。</li>
+    <li><b>我的判断三：它对"表示鸿沟"的诊断对，但方向偏了。</b>它把出路指向"提高源码感知程度"（p.48–p.49），即往层③填东西；而智能体场景的鸿沟不在"文件/行 vs 类/方法"，而在"事件流 vs 任务语义"——工具调用、文件快照、测试结果都是结构化的，缺的不是解析深度，而是<strong>把它们挂到同一个任务上的那根线</strong>。这是同一类问题的下一代形态，也是本课题与它最实质的差别。</li>
+  </ul>
+</section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p><strong>引在哪：</strong>开题报告"一、2（一）变更分析与代码历史"已引它作为仓库挖掘任务与方法的综述（[19]），可继续沿用；更有价值的位置是"一、2（四）研究述评"——那里写"四者各有积累，但都未同时满足三点"，本篇正好用来支撑第一点的前史：<strong>它证明"跨源关联缺失"是被明确写进文献的公认问题</strong>。此外"二、1（三）研究内容（1）信息模型与统一事件表示"在解释"为什么事件模式要可扩展、为什么保留原始字段"时，可引它的层③/层④分离作为设计理由。<strong>对应哪个模块：</strong>研究内容第 ① 块（信息模型）与第 ② 块（上下文采集与关联）。第 ② 块的关联算法——时间邻近、显式引用、文件级位置映射——本质就是在补它 p.5 指出的那条缺失的边。</p>
+    <p>本篇对应的是四个核心问题里的<strong>信息分散</strong>：同一件事的证据散在互不连接的仓库里。同簇另两篇各补一角——noWorkflow 给出"把一次执行捕获成可查询图"的技术路线（对应<strong>溯源断裂</strong>），中断恢复研究给出人为此付出多少时间的实证（对应<strong>上下文丢失</strong>）。</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p>"把表示与信息源分成两层"的思路。本课题的事件模式因此把原始字段与归一化字段并存：前者对应信息源，后者对应表示。</p></div>
+    <div class="card"><h4>可对照</h4><p>它列出的 10 类演化任务可当作本课题"任务上下文能支持哪些问题"的对照清单，论文里可以说明本课题覆盖其中哪几类。</p></div>
+    <div class="card"><h4>要避开</h4><p>不要引它支撑"细粒度到 hunk"或"证据链"——它停在文件与行，且把验证依据排除在核心信息之外。</p></div>
+  </div>
+
+  <p><strong>它不能支撑什么：</strong>第一，不能支撑任何效果结论——它没有系统、没有用户实验，只有对别人工作的归类。第二，不能支撑智能体场景的合理性：它的"代理"是提交代码的开发者，不是会自主调用工具的模型。第三，不能支撑任务边界的判定方法，它连"一次变更"的边界都要靠滑动窗口近似（p.5）。第四，不能支撑"证据链"这个概念本身——在它的框架里源码变更是终点（"其他信息都是用来帮助理解源码变更的"，p.5），而在本课题里源码变更是<strong>中间节点</strong>，往上要接触发它的指令，往下要接验证它的测试。<mark>引用它的正确姿势是"借它的问题，不借它的答案"。</mark></p>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+  <p>四句，分别是"信息分散"的原始表述、它的立场声明、它的问题意识与它的自省。</p>
+
+  <blockquote>
+    <p>Furthermore, these repositories are managed and operated (for the most part) in isolation and have no explicit direct relationship with each other. For example, no explicit information is typically maintained between a particular 'bug' in the defect-tracking system and the corresponding source code changes in the source-control repositories.</p>
+    <p>而且这些仓库（大多数情况下）是被各自孤立地管理和运营的，彼此之间没有显式的直接关系。例如，缺陷跟踪系统中的某条"缺陷"与源码库中对应的代码变更之间，通常不维护任何显式信息。</p>
+    <span class="src">— 原文 p.5</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Therefore, the fundamental unit of software evolution is the source code change. All other information is maintained to help understand, rationalize, and manage source code changes.</p>
+    <p>因此，软件演化的基本单位是源码变更。其他所有信息都是为了帮助理解、解释和管理源码变更而维护的。</p>
+    <span class="src">— 原文 p.5</span>
+  </blockquote>
+
+  <blockquote>
+    <p>However, there is no common nomenclature in terms of the reference model, classification, and/or process model to form a basis for describing the overall MSR investigation in the context of software evolution.</p>
+    <p>然而，在参考模型、分类与过程模型方面都没有共同的术语体系，无法为描述软件演化语境下的整体仓库挖掘研究提供基础。</p>
+    <span class="src">— 原文 p.3</span>
+  </blockquote>
+
+  <blockquote>
+    <p>In order to take steps towards this, the following issues needs to be addressed: (1) we need to be able to perform MSR on fine-grained entities; (2) there needs to be clear guidelines for the number of versions to be considered; and (3) standards for validation must be developed.</p>
+    <p>为朝这个方向推进，需要解决以下问题：（1）要能在细粒度实体上做仓库挖掘；（2）需要有关于"该考虑多少个版本"的明确指引；（3）必须建立验证标准。</p>
+    <span class="src">— 原文 p.48</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>软件仓库挖掘 <span class="term">MSR</span></dt>
+    <dd>对软件演化中产生并归档的制品做系统性经验研究，以发现演化的规律、关系与趋势（p.2）。</dd>
+    <dt>软件仓库 <span class="term">software repository</span></dt>
+    <dd>本篇指三类：源码版本控制系统、缺陷跟踪系统、通信存档（p.2）。本课题要加第四类：智能体事件流。</dd>
+    <dt>变更集 / 事务 <span class="term">change-set / transaction</span></dt>
+    <dd>一次逻辑上完整的提交所包含的多文件修改。CVS 不维护它，故需滑动窗口近似；Subversion 保留了提交原子性（p.5–p.6）。本课题的对应物是"一次工具调用产生的 hunk 集合"。</dd>
+    <dt>逻辑耦合 <span class="term">logical coupling</span></dt>
+    <dd>从版本历史推断的"总是一起改"的实体间关系，即使源码里没有显式依赖，也称隐藏依赖（p.16）。</dd>
+    <dt>市场篮子问题 <span class="term">MBQ</span></dt>
+    <dd>"若 A 发生，通常还会连带发生什么"，答案是一组规则或趋势描述（p.6）。</dd>
+    <dt>流行度问题 <span class="term">PQ</span></dt>
+    <dd>"某实体是否被加/删/改""有多少被复用"这类度量式或布尔式问题（p.6）。</dd>
+    <dt>物理级 / 逻辑级表示 <span class="term">physical / logical representation</span></dt>
+    <dd>前者指文件与行号，后者指类、方法、变量等语言实体。仓库通常只提供前者，问题常需要后者（p.9）。</dd>
+    <dt>四层分类法 <span class="term">layered taxonomy</span></dt>
+    <dd>本篇提出的框架：演化对象 → 目的 → 表示 → 信息源（p.8）。</dd>
+    <dt>效度威胁 <span class="term">threats to validity</span></dt>
+    <dd>结论可能不成立的原因。本篇指出 MSR 的效度问题集中在数据选取、版本数量与缺乏统一验证标准（p.49）。</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>它为什么把"多仓库集成"排除在综述之外？这造成了什么后果？</summary><p>提示：p.5 的理由是"只改变数据怎么获得，不改变 purpose、method 或 evaluation"。后果有两面：保持了聚焦，却使它无法回答"跨源关联该怎么做"——而这正是它自己指出的最大缺口。引用时要把这条自认的边界说清楚。</p></details>
+    <details><summary>层③与层④如果合成一层，会丢掉什么洞察？</summary><p>提示：合成后就看不到"仓库给文件/行、问题要类/方法"这个鸿沟，也就看不到后续工作的主战场。代价是分类变复杂，收益是让缺口可见——这是分类法设计里典型的粒度取舍。</p></details>
+    <details><summary>精确率 12%、召回率 87%，作者为什么照实报？</summary><p>提示：这是别人的结果，本篇只是转述。但它选择把难看的数字写进正文，说明作者判断这个数字本身有信息量——它解释了领域为何转向源码感知。若只报 87%，读者会误以为元数据预测已可用。</p></details>
+    <details><summary>第 5.2 节"该挖多少个版本"能映射到本课题的哪个问题？</summary><p>提示：映射到"任务上下文该回溯多远"。一个任务跨了 30 轮对话，判定边界时该看多久的空闲时长？太短会切碎任务，太长会把两个任务粘成一个。这正是开题报告 RQ5 要回答的问题，只是单位从"版本"换成了"消息/事件"。</p></details>
+  </div>
+</section>
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="07-noworkflow.html"><span class="dir">← 上一篇</span>noWorkflow</a>
+    <a href="09-resumption.html" style="text-align:right"><span class="dir">下一篇 →</span>中断后的恢复策略</a>
+  </div>
+</div>
+
+<footer>
+  《在方法泛滥之前，先给这个领域画一张能看出空缺的地图》精读笔记 · 基于 JSM 2007 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

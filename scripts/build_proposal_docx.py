@@ -555,7 +555,9 @@ class ProposalBuilder(object):
         return p
 
     def add_heading(self, text, level):
-        style_name = "Heading 1" if level == 1 else "Heading 2"
+        style_name = {1: "Heading 1", 2: "Heading 2", 3: "Heading 3"}.get(
+            level, "Heading 2"
+        )
         p = self._new_paragraph(style=style_name)
         pf = p.paragraph_format
         pf.space_before = Pt(14 if level == 1 else 10)
@@ -761,6 +763,11 @@ class ProposalBuilder(object):
 
             if line.startswith("# ") and not line.startswith("## "):
                 self.add_title(line[2:].strip())
+                i += 1
+                continue
+
+            if line.startswith("#### "):
+                self.add_heading(line[5:].strip(), 3)
                 i += 1
                 continue
 

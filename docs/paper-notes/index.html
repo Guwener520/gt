@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>文献精读总览｜9 篇代码智能体与溯源文献</title>
+<style>
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --a:#4f46e5; --a-soft:#eef0fe;
+  --b:#0f766e; --b-soft:#e3f2ef;
+  --c:#a16207; --c-soft:#fbf1dc;
+  --radius:14px; --measure:60rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+
+/* 页头 */
+.hero{background:linear-gradient(160deg,#eef0fe 0%,#e3f2ef 45%,#fbf1dc 100%);border-bottom:1px solid var(--line);padding:3.4rem 0 3rem}
+.hero .kicker{font-family:var(--mono);font-size:.8rem;letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase;margin-bottom:1rem}
+.hero h1{font-size:clamp(1.9rem,4.6vw,2.9rem);line-height:1.25;margin:0 0 .8rem;font-weight:800;letter-spacing:-.02em}
+.hero .sub{font-size:1.05rem;color:var(--ink-2);margin:0 0 1.6rem;max-width:44rem}
+.hero .note{font-size:.9rem;color:var(--ink-3);margin:0;max-width:46rem}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(8rem,1fr));gap:.9rem;margin:2rem 0 0}
+.stat{background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.06);border-radius:var(--radius);padding:.9rem 1rem;text-align:center;backdrop-filter:blur(6px)}
+.stat .v{font-family:var(--mono);font-size:1.5rem;font-weight:700;line-height:1.2}
+.stat .k{font-size:.78rem;color:var(--ink-3);margin-top:.2rem}
+
+main{padding:2.8rem 0 4rem}
+section{margin:0 0 3.4rem}
+h2{font-size:1.4rem;margin:0 0 .5rem;font-weight:800;letter-spacing:-.01em}
+h2 .en{display:block;font-family:var(--mono);font-size:.76rem;letter-spacing:.14em;color:var(--ink-3);text-transform:uppercase;font-weight:600;margin-top:.3rem}
+.sec-intro{color:var(--ink-2);font-size:.97rem;margin:0 0 1.8rem;max-width:48rem}
+
+/* 阅读路径 */
+.paths{display:grid;grid-template-columns:repeat(auto-fit,minmax(16rem,1fr));gap:1rem}
+.path{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.4rem;position:relative}
+.path .badge{display:inline-block;font-size:.72rem;font-weight:700;letter-spacing:.08em;padding:.18rem .55rem;border-radius:999px;margin-bottom:.7rem}
+.path:nth-child(1) .badge{background:var(--a-soft);color:var(--a)}
+.path:nth-child(2) .badge{background:var(--b-soft);color:var(--b)}
+.path:nth-child(3) .badge{background:var(--c-soft);color:var(--c)}
+.path h3{margin:0 0 .5rem;font-size:1.02rem;font-weight:700}
+.path p{margin:0 0 .8rem;font-size:.9rem;color:var(--ink-2);line-height:1.75}
+.path .seq{font-family:var(--mono);font-size:.82rem;color:var(--ink-2);background:var(--line-2);border-radius:8px;padding:.5rem .7rem;line-height:1.9}
+.path .seq b{color:var(--ink);font-weight:700}
+
+/* 文献地图 */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.7rem;line-height:1.6}
+
+/* 簇 */
+.cluster{margin:0 0 2.6rem}
+.cluster-head{display:flex;align-items:baseline;gap:.8rem;flex-wrap:wrap;margin:0 0 .3rem;padding-bottom:.6rem;border-bottom:2px solid var(--line)}
+.cluster-head .dot{width:.7rem;height:.7rem;border-radius:50%;flex:none}
+.cluster-head h3{margin:0;font-size:1.12rem;font-weight:800}
+.cluster-head .tag{font-size:.8rem;color:var(--ink-3)}
+.cluster[data-c="a"] .dot{background:var(--a)}
+.cluster[data-c="b"] .dot{background:var(--b)}
+.cluster[data-c="c"] .dot{background:var(--c)}
+.cluster-desc{font-size:.9rem;color:var(--ink-3);margin:.6rem 0 1.2rem;max-width:46rem}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(17rem,1fr));gap:1rem}
+.pcard{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius);padding:1.2rem 1.3rem;transition:.18s;position:relative;overflow:hidden}
+.pcard::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--c1)}
+.pcard:hover{border-color:var(--c1);box-shadow:0 6px 22px rgba(0,0,0,.07);transform:translateY(-2px)}
+.pcard .no{font-family:var(--mono);font-size:.75rem;font-weight:700;color:var(--c1);letter-spacing:.1em}
+.pcard h4{margin:.3rem 0 .25rem;font-size:1.03rem;font-weight:700;line-height:1.5}
+.pcard .en{font-size:.78rem;color:var(--ink-3);font-style:italic;margin:0 0 .7rem;line-height:1.5}
+.pcard .say{font-size:.9rem;color:var(--ink-2);margin:0 0 .85rem;line-height:1.75}
+.pcard .foot{display:flex;gap:.4rem;flex-wrap:wrap;font-size:.72rem;color:var(--ink-3)}
+.pcard .foot span{background:var(--line-2);padding:.12rem .5rem;border-radius:999px}
+.pcard[data-c="a"]{--c1:var(--a)} .pcard[data-c="b"]{--c1:var(--b)} .pcard[data-c="c"]{--c1:var(--c)}
+
+/* 表格 */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);margin:1.2rem 0}
+table{border-collapse:collapse;width:100%;font-size:.87rem;min-width:44rem}
+th,td{padding:.62rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--line-2);font-weight:700;font-size:.8rem;white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.c{text-align:center;font-family:var(--mono);white-space:nowrap}
+.mk{font-family:var(--mono);font-weight:700}
+.mk.a{color:var(--a)} .mk.b{color:var(--b)} .mk.c{color:var(--c)}
+
+/* 对应关系 */
+.mapping{display:grid;gap:.85rem}
+.mrow{display:grid;grid-template-columns:11rem 1fr;gap:1rem;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--radius);padding:1rem 1.2rem;align-items:start}
+.mrow .q{font-weight:700;font-size:.93rem}
+.mrow .q small{display:block;font-weight:400;font-size:.76rem;color:var(--ink-3);margin-top:.2rem}
+.mrow .ev{font-size:.88rem;color:var(--ink-2);line-height:1.8}
+.mrow .ev a{color:var(--ink);text-decoration:none;font-weight:600;border-bottom:1px solid var(--line)}
+.mrow .ev a:hover{border-bottom-color:currentColor}
+@media (max-width:40rem){.mrow{grid-template-columns:1fr;gap:.4rem}}
+
+.callout{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--ink-3);border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;margin:1.4rem 0;font-size:.93rem;color:var(--ink-2)}
+.callout b{color:var(--ink)}
+.callout p:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.74rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:.35rem}
+
+footer{text-align:center;font-size:.82rem;color:var(--ink-3);padding:2.4rem 0 3.4rem;border-top:1px solid var(--line);line-height:1.9}
+footer a{color:var(--ink-2)}
+
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;--line:#2e333a;--line-2:#262a30;
+  --a-soft:#232838;--b-soft:#16302c;--c-soft:#31251a}
+body.dark .hero{background:linear-gradient(160deg,#1c1f2e 0%,#172a28 45%,#2a2418 100%)}
+body.dark .stat{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.08)}
+body.dark tbody tr:hover{background:#22262c}
+@media print{.theme{display:none}body{font-size:10.5pt}.hero{background:none}}
+@media (max-width:40rem){body{font-size:16px}.wrap{padding:0 1.05rem}.hero{padding:2.2rem 0 2rem}}
+</style>
+</head>
+<body>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Literature Notes · 9 Papers</div>
+    <h1>文献精读：从代码智能体到变更溯源</h1>
+    <p class="sub">为《面向代码智能体的开发任务上下文追踪与代码变更溯源系统》整理的 9 篇核心文献导读。每篇一页，从原文出发，把「它到底在解决什么、怎么做的、数字说明什么、跟你有什么关系」讲清楚。</p>
+    <p class="note">所有页码为 PDF 物理页码；所有数字均可在原文对应页找到。页面完全离线可用，双击即可打开。</p>
+    <div class="stats">
+      <div class="stat"><div class="v">9</div><div class="k">篇精读</div></div>
+      <div class="stat"><div class="v">3</div><div class="k">个主题簇</div></div>
+      <div class="stat"><div class="v">3</div><div class="k">条阅读路径</div></div>
+      <div class="stat"><div class="v">0</div><div class="k">外部依赖</div></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- 怎么用 -->
+<section>
+  <h2>怎么用这套笔记<span class="en">How to use</span></h2>
+  <p class="sec-intro">不建议从第 1 篇顺着读到第 9 篇。按你的目的选一条路径，剩下的当工具书查。</p>
+
+  <div class="paths">
+    <div class="path">
+      <span class="badge">路径一 · 约 1 小时</span>
+      <h3>只为搞懂课题要解决什么</h3>
+      <p>四篇直击要害：问题被定义成什么样、智能体怎么操作代码库、变更怎么被溯源、中断后为什么会丢上下文。</p>
+      <div class="seq"><b>01</b> SWE-bench → <b>02</b> SWE-agent → <b>07</b> noWorkflow → <b>09</b> 中断恢复</div>
+    </div>
+    <div class="path">
+      <span class="badge">路径二 · 约 3 小时</span>
+      <h3>建立完整技术全景</h3>
+      <p>按 01→09 顺序读。这条线索是：先有评测基准，才有可比较的智能体；先有接口设计，才谈得上过程记录；最后回到溯源与人因——也就是本课题真正站的位置。</p>
+      <div class="seq"><b>01</b>→<b>02</b>→<b>03</b>→<b>04</b>→<b>05</b>→<b>06</b>→<b>07</b>→<b>08</b>→<b>09</b></div>
+    </div>
+    <div class="path">
+      <span class="badge">路径三 · 按需查阅</span>
+      <h3>写论文时按章取用</h3>
+      <p>写第二章相关工作查 04/05/06/08；写第三章系统设计查 03/07；写第五章评估方案查 01/02/09。每页第 07 节都写明了「能引到哪一节」。</p>
+      <div class="seq">相关工作 <b>04 05 06 08</b> · 系统设计 <b>03 07</b> · 评估 <b>01 02 09</b></div>
+    </div>
+  </div>
+</section>
+
+<!-- 文献地图 -->
+<section>
+  <h2>文献地图<span class="en">Where each paper sits</span></h2>
+  <p class="sec-intro">这 9 篇不是同一个层面的东西。横轴从「智能体内部怎么运转」到「开发者怎么理解和接续工作」——你的课题正好落在这条谱系的右端，但要靠左端的机制做支撑。</p>
+
+  <figure>
+    <svg viewBox="0 0 760 250" role="img" aria-label="9 篇文献在机器侧到人侧谱系上的位置">
+      <defs>
+        <linearGradient id="spectrum" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stop-color="#4f46e5" stop-opacity=".16"/>
+          <stop offset="50%" stop-color="#0f766e" stop-opacity=".16"/>
+          <stop offset="100%" stop-color="#a16207" stop-opacity=".18"/>
+        </linearGradient>
+      </defs>
+      <rect x="30" y="96" width="700" height="46" rx="23" fill="url(#spectrum)"/>
+      <line x1="30" y1="119" x2="730" y2="119" stroke="#d8d3c8" stroke-width="1.5"/>
+
+      <!-- 分区标签 -->
+      <text x="160" y="82" text-anchor="middle" font-size="12.5" font-weight="700" fill="#4f46e5">智能体内部机制</text>
+      <text x="380" y="82" text-anchor="middle" font-size="12.5" font-weight="700" fill="#0f766e">平台与评测</text>
+      <text x="620" y="82" text-anchor="middle" font-size="12.5" font-weight="700" fill="#a16207">溯源与人因</text>
+
+      <line x1="255" y1="60" x2="255" y2="100" stroke="#e6e2d9" stroke-width="1.5" stroke-dasharray="3 3"/>
+      <line x1="505" y1="60" x2="505" y2="100" stroke="#e6e2d9" stroke-width="1.5" stroke-dasharray="3 3"/>
+
+      <!-- 上方：A 簇 -->
+      <circle cx="90" cy="119" r="7" fill="#4f46e5"/>
+      <text x="90" y="152" text-anchor="middle" font-size="11" fill="#3d4450">04 CodeAct</text>
+      <circle cx="165" cy="119" r="7" fill="#4f46e5"/>
+      <text x="165" y="152" text-anchor="middle" font-size="11" fill="#3d4450">05 MetaGPT</text>
+      <circle cx="215" cy="119" r="7" fill="#4f46e5"/>
+      <text x="215" y="170" text-anchor="middle" font-size="11" fill="#3d4450">06 ChatDev</text>
+
+      <!-- 中部：B 簇 -->
+      <circle cx="310" cy="119" r="7" fill="#0f766e"/>
+      <text x="310" y="152" text-anchor="middle" font-size="11" fill="#3d4450">01 SWE-bench</text>
+      <circle cx="390" cy="119" r="7" fill="#0f766e"/>
+      <text x="390" y="152" text-anchor="middle" font-size="11" fill="#3d4450">02 SWE-agent</text>
+      <circle cx="460" cy="119" r="7" fill="#0f766e"/>
+      <text x="460" y="170" text-anchor="middle" font-size="11" fill="#3d4450">03 OpenHands</text>
+
+      <!-- 右部：C 簇 -->
+      <circle cx="560" cy="119" r="7" fill="#a16207"/>
+      <text x="560" y="152" text-anchor="middle" font-size="11" fill="#3d4450">08 MSR 综述</text>
+      <circle cx="625" cy="119" r="7" fill="#a16207"/>
+      <text x="625" y="170" text-anchor="middle" font-size="11" fill="#3d4450">07 noWorkflow</text>
+      <circle cx="690" cy="119" r="7" fill="#a16207"/>
+      <text x="690" y="152" text-anchor="middle" font-size="11" fill="#3d4450">09 中断恢复</text>
+
+      <!-- 轴说明 -->
+      <text x="30" y="212" font-size="11.5" fill="#6b7280">← 机器侧：动作怎么表达、多智能体怎么分工</text>
+      <text x="730" y="212" text-anchor="end" font-size="11.5" fill="#6b7280">人侧：开发过程怎么被记录、理解、接续 →</text>
+      <text x="380" y="238" text-anchor="middle" font-size="11.5" font-weight="700" fill="#191c1f">本课题的位置：把中间一层的「过程」记录成右端「可理解、可续接」的东西</text>
+    </svg>
+    <figcaption>图 1　9 篇文献在「机器侧 ↔ 人侧」谱系上的分布。三色对应下文三个主题簇。</figcaption>
+  </figure>
+</section>
+
+<!-- 三簇卡片 -->
+<section>
+  <h2>三个主题簇<span class="en">Three clusters</span></h2>
+  <p class="sec-intro">同簇内的文章互相咬合，建议连着读；跨簇可以跳。</p>
+
+  <!-- A -->
+  <div class="cluster" data-c="a">
+    <div class="cluster-head">
+      <span class="dot"></span>
+      <h3>A · 智能体机制</h3>
+      <span class="tag">动作怎么表达 · 多智能体怎么协作</span>
+    </div>
+    <p class="cluster-desc">这一簇回答「智能体内部是怎么运转的」。本课题不实现智能体，但必须知道它的动作长什么样、任务怎么被分解——否则采集上来的事件无从解释。</p>
+    <div class="cards">
+      <a class="pcard" data-c="a" href="04-codeact.html">
+        <div class="no">04</div>
+        <h4>CodeAct：让智能体用代码说话</h4>
+        <p class="en">Executable Code Actions Elicit Better LLM Agents</p>
+        <p class="say">把动作空间从 JSON 换成可执行 Python，成功率最高提升 20%——因为代码天生能组合、能复用库、能自我调试。</p>
+        <div class="foot"><span>ICML 2024</span><span>25 页</span><span>关联 ★★★☆☆</span></div>
+      </a>
+      <a class="pcard" data-c="a" href="05-metagpt.html">
+        <div class="no">05</div>
+        <h4>MetaGPT：把公司 SOP 写进多智能体</h4>
+        <p class="en">Meta Programming for a Multi-Agent Collaborative Framework</p>
+        <p class="say">让多个 LLM 扮演产品经理、架构师、工程师，用结构化文档交接而不是自由聊天，HumanEval Pass@1 达 85.9%。</p>
+        <div class="foot"><span>ICLR 2024</span><span>29 页</span><span>关联 ★★★★☆</span></div>
+      </a>
+      <a class="pcard" data-c="a" href="06-chatdev.html">
+        <div class="no">06</div>
+        <h4>ChatDev：用对话链跑完瀑布模型</h4>
+        <p class="en">Communicative Agents for Software Development</p>
+        <p class="say">把开发阶段拆成原子子任务，每个子任务由两个角色对话完成。对话记录本身就是一份过程证据。</p>
+        <div class="foot"><span>ACL 2024</span><span>13 页</span><span>关联 ★★★★☆</span></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="cluster" data-c="b">
+    <div class="cluster-head">
+      <span class="dot"></span>
+      <h3>B · 平台与评测</h3>
+      <span class="tag">怎么衡量 · 怎么搭起来</span>
+    </div>
+    <p class="cluster-desc">这一簇回答「怎么证明它真的能干活」以及「一个能跑的智能体系统由哪些部件构成」。SWE-bench 定了标尺，SWE-agent 定了接口，OpenHands 把两者工程化。</p>
+    <div class="cards">
+      <a class="pcard" data-c="b" href="01-swe-bench.html">
+        <div class="no">01</div>
+        <h4>SWE-bench：拿真实 GitHub Issue 考模型</h4>
+        <p class="en">Can Language Models Resolve Real-World GitHub Issues?</p>
+        <p class="say">2294 个真实 issue + 对应 PR，用测试用例判定对错。最强模型 Claude 2 只解出 1.96%——从此成为智能体领域的公共标尺。</p>
+        <div class="foot"><span>ICLR 2024</span><span>52 页</span><span>关联 ★★★★★</span></div>
+      </a>
+      <a class="pcard" data-c="b" href="02-swe-agent.html">
+        <div class="no">02</div>
+        <h4>SWE-agent：给模型设计专用界面</h4>
+        <p class="en">Agent-Computer Interfaces Enable Automated Software Engineering</p>
+        <p class="say">关键不在模型而在接口。把「给人用的」shell 改造成「给模型用的」ACI，SWE-bench 解决率从非交互式基线的最好 3.8% 提到 12.5%。</p>
+        <div class="foot"><span>NeurIPS 2024</span><span>118 页</span><span>关联 ★★★★★</span></div>
+      </a>
+      <a class="pcard" data-c="b" href="03-openhands.html">
+        <div class="no">03</div>
+        <h4>OpenHands：事件流驱动的智能体平台</h4>
+        <p class="en">An Open Platform for AI Software Developers as Generalist Agents</p>
+        <p class="say">用统一的 event stream 承载所有动作与观察，配沙箱运行时。这是全 9 篇里离本课题「统一事件表示」最近的设计。</p>
+        <div class="foot"><span>ICLR 2025</span><span>38 页</span><span>关联 ★★★★★</span></div>
+      </a>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="cluster" data-c="c">
+    <div class="cluster-head">
+      <span class="dot"></span>
+      <h3>C · 溯源与人因</h3>
+      <span class="tag">本课题的理论根基</span>
+    </div>
+    <p class="cluster-desc">这一簇直接对应本课题的四个核心问题。如果你时间只够读三篇，读这三篇——它们分别给出了「信息为什么分散」「溯源该怎么做」「上下文为什么丢」的学术依据。</p>
+    <div class="cards">
+      <a class="pcard" data-c="c" href="07-noworkflow.html">
+        <div class="no">07</div>
+        <h4>noWorkflow：无侵入采集执行溯源</h4>
+        <p class="en">A Tool for Collecting, Analyzing, and Managing Provenance from Python Scripts</p>
+        <p class="say">用 AST 变换 + 运行时探针，不动用户一行代码就记下「谁、何时、为什么产生了这个结果」，并支持事后查询。</p>
+        <div class="foot"><span>PVLDB 2017</span><span>4 页</span><span>关联 ★★★★★</span></div>
+      </a>
+      <a class="pcard" data-c="c" href="08-msr-survey.html">
+        <div class="no">08</div>
+        <h4>MSR 综述：软件仓库挖掘的问题地图</h4>
+        <p class="en">A Survey and Taxonomy of Approaches for Mining Software Repositories</p>
+        <p class="say">源码、变更日志、缺陷库、邮件列表各说各话、互不关联——这是「信息分散」问题最早也最系统的学术表述。</p>
+        <div class="foot"><span>JSM 2007</span><span>55 页</span><span>关联 ★★★★☆</span></div>
+      </a>
+      <a class="pcard" data-c="c" href="09-resumption.html">
+        <div class="no">09</div>
+        <h4>中断恢复：程序员被打断后怎么接上</h4>
+        <p class="en">Resumption Strategies for Interrupted Programming Tasks</p>
+        <p class="say">实证研究发现，恢复上下文主要靠重读代码和回忆，工具几乎帮不上忙——这是「上下文丢失」最有力的实证支撑。</p>
+        <div class="foot"><span>SQJ 2011</span><span>30 页</span><span>关联 ★★★★★</span></div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- 总览对照表 -->
+<section>
+  <h2>总览对照表<span class="en">At a glance</span></h2>
+  <p class="sec-intro">一张表看清 9 篇各自的分工。「对应研究内容」指本课题五块研究内容中的哪一块。</p>
+  <div class="tw">
+    <table>
+      <caption style="caption-side:top;text-align:left;font-size:.83rem;color:#6b7280;padding:.8rem 1rem .2rem;font-weight:600">表 1　9 篇文献定位对照（编号即阅读顺序）</caption>
+      <thead>
+        <tr><th>#</th><th>论文</th><th>年份 / 出处</th><th>类型</th><th>核心贡献</th><th>对应研究内容</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="c mk b">01</td><td>SWE-bench</td><td class="c">ICLR 2024</td><td>基准</td><td>真实 issue 级评测标尺</td><td>⑤ 评估</td></tr>
+        <tr><td class="c mk b">02</td><td>SWE-agent</td><td class="c">NeurIPS 2024</td><td>方法 + 系统</td><td>为模型设计 ACI 接口</td><td>② 采集（工具调用）</td></tr>
+        <tr><td class="c mk b">03</td><td>OpenHands</td><td class="c">ICLR 2025</td><td>平台</td><td>事件流 + 沙箱运行时</td><td>① 信息模型</td></tr>
+        <tr><td class="c mk a">04</td><td>CodeAct</td><td class="c">ICML 2024</td><td>方法</td><td>代码作为统一动作空间</td><td>② 采集（动作表示）</td></tr>
+        <tr><td class="c mk a">05</td><td>MetaGPT</td><td class="c">ICLR 2024</td><td>框架</td><td>SOP + 结构化中间产物</td><td>④ 任务视角</td></tr>
+        <tr><td class="c mk a">06</td><td>ChatDev</td><td class="c">ACL 2024</td><td>框架</td><td>对话链 + 角色分工</td><td>④ 任务视角</td></tr>
+        <tr><td class="c mk c">07</td><td>noWorkflow</td><td class="c">PVLDB 2017</td><td>工具</td><td>无侵入执行溯源 + 事后查询</td><td>③ 证据链</td></tr>
+        <tr><td class="c mk c">08</td><td>MSR 综述</td><td class="c">JSM 2007</td><td>综述</td><td>数据源分类与跨源关联缺失</td><td>② 关联</td></tr>
+        <tr><td class="c mk c">09</td><td>中断恢复</td><td class="c">SQJ 2011</td><td>实证</td><td>恢复策略分类与工具启示</td><td>④ 任务续接</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- 问题映射 -->
+<section>
+  <h2>四个核心问题，各由谁支撑<span class="en">Problem → evidence</span></h2>
+  <p class="sec-intro">写开题报告或论文引言时，每个问题的"研究缺口"都可以由下面两篇文献共同支撑，一篇给问题、一篇给方向。</p>
+
+  <div class="mapping">
+    <div class="mrow">
+      <div class="q">① 信息分散<small>对话、diff、工具调用、测试结果分属不同界面</small></div>
+      <div class="ev"><a href="08-msr-survey.html">08 MSR 综述</a> 系统描述了源码、变更日志、缺陷库等数据源之间长期缺乏关联的现象；<a href="03-openhands.html">03 OpenHands</a> 则给出了「用统一事件流承载一切动作与观察」的正面解法。</div>
+    </div>
+    <div class="mrow">
+      <div class="q">② 缺少任务视角<small>工具以会话或文件为单位，而非以开发任务为单位</small></div>
+      <div class="ev"><a href="05-metagpt.html">05 MetaGPT</a> 用 SOP 把任务拆成有依赖关系的结构化产物，说明「任务分解」可以被显式建模；<a href="06-chatdev.html">06 ChatDev</a> 用 chat chain 把瀑布阶段切成原子子任务，提供了另一种任务粒度划分方式。</div>
+    </div>
+    <div class="mrow">
+      <div class="q">③ 溯源断裂<small>代码为什么改成这样，无法从代码反查证据</small></div>
+      <div class="ev"><a href="07-noworkflow.html">07 noWorkflow</a> 给出 why / where / when 三类溯源查询的完整数据模型；<a href="02-swe-agent.html">02 SWE-agent</a> 的 ACI 设计则说明了「工具调用轨迹」本身可以被结构化记录到什么细度。</div>
+    </div>
+    <div class="mrow">
+      <div class="q">④ 上下文丢失<small>多轮修改、并行任务、中断重启后难以恢复</small></div>
+      <div class="ev"><a href="09-resumption.html">09 中断恢复</a> 提供了「恢复主要靠人工重读、工具支持不足」的实证依据；<a href="01-swe-bench.html">01 SWE-bench</a> 的 task instance 设计则示范了「把一段工作界定为一个可独立恢复的单元」该怎么切。</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <span class="tag">写作提醒</span>
+    <p><b>不要把这 9 篇堆成"相关工作罗列"。</b>更有效的写法是：每个核心问题下先引一篇指出缺口（08 / 09），再引一篇说明已有解法能走到哪一步（07 / 03），最后说明你的工作补的是哪一段。这个「缺口—已有解法—你的位置」的三段式，比按年份排列的综述更像研究。</p>
+  </div>
+</section>
+
+<!-- 使用约定 -->
+<section>
+  <h2>使用约定<span class="en">Conventions</span></h2>
+  <div class="callout">
+    <span class="tag">页码与数字</span>
+    <p>每页标注的页码是 <b>PDF 物理页码</b>（用 <code>pdftotext</code> 分页后逐页核对），不是论文印刷页码——两者在会议论文里可能相差 1–2 页。引文进入正式论文时，请以出版方版本的页码为准。</p>
+  </div>
+  <div class="callout">
+    <span class="tag">离线与打印</span>
+    <p>所有页面无任何外部依赖，断网可正常打开；浏览器「打印 → 存为 PDF」会隐藏导航与按钮，保留正文与图表，可直接当纸质笔记用。右上角 ◐ 按钮切换深色模式，设置会记住。</p>
+  </div>
+  <div class="callout">
+    <span class="tag">可信度分级</span>
+    <p>每页第 08 节「原文金句」都是逐字摘录并标注页码，可直接引用；正文讲解中的判断性表述（尤其第 06 节「我的判断」）是整理者的分析，引用时请自行核实，不要当作原文观点。</p>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  文献精读笔记 · 共 9 篇 · 整理于 2026-11-03<br>
+  原文来源：<code>refs/pdfs/</code>　·　工作区：<code>D:\DSHCode\graduationThesis</code>
+</footer>
+
+<script>
+(function(){
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>

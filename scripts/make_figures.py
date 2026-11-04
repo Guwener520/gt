@@ -1,13 +1,19 @@
 # -*- coding: utf-8 -*-
 """Draw the three proposal figures with Pillow (no matplotlib in the bundled runtime).
 
-Layout rules that keep the figures readable when placed at 14 cm in the docx:
+v3 (2026-11-03) redraw:
+  fig1-route : four research modules (concept/model, acquisition/association, provenance/resumption,
+               evaluation)
+  fig2-model : eight-entity task-context graph with provenance relations (replaces the old
+               four-layer software architecture figure)
+  fig3-gantt : 32 teaching weeks, six phases, matching task-book v6
+
+Layout rules that keep the figures readable when placed at ~15 cm:
   * canvas width 2000 px  ->  a 40 px glyph prints at about 8 pt
-  * minimum glyph size used here is 30 px (about 6 pt) for secondary annotations
-  * no outer frame is drawn; the docx builder must not add one either
+  * minimum glyph size used here is 26 px (about 5.5 pt) for secondary annotations
+  * no outer frame is drawn; the LaTeX figure environment must not add one either
 """
 import math
-from datetime import date
 from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
@@ -23,6 +29,7 @@ INK = (31, 41, 55)
 SUB = (71, 85, 105)
 BLUE_F = (219, 234, 254)
 BLUE_E = (37, 99, 163)
+BLUE_F2 = (239, 246, 255)
 GRAY_F = (241, 245, 249)
 GRAY_E = (120, 134, 152)
 WARM_F = (254, 243, 199)
@@ -84,183 +91,180 @@ def polyline(d, pts, color=WARM_E, width=2, dashed=False):
         arrow(d, a, b, color=color, width=width, dashed=dashed)
 
 
+def tag(d, cx, cy, s, f, fill=SUB):
+    """Relation label on a white patch so the arrow behind it cannot cut the text."""
+    bb = d.textbbox((0, 0), s, font=f)
+    w, h = bb[2] - bb[0], bb[3] - bb[1]
+    pad = 7
+    d.rounded_rectangle([cx - w / 2 - pad, cy - h / 2 - pad,
+                         cx + w / 2 + pad, cy + h / 2 + pad], radius=6, fill="white")
+    text_at(d, cx, cy, s, f, fill)
+
+
 # --------------------------------------------------------------------------- fig 1
 def fig_route():
-    H = 1040
+    H = 720
     im = Image.new("RGB", (W, H), "white")
     d = ImageDraw.Draw(im)
-    f_t, f_d, f_tag = font(42, True), font(31), font(28, True)
+    f_t, f_d = font(42, True), font(30)
 
-    # numbering: 步骤一…六 (the calendar schedule elsewhere uses 阶段一…十二, so the
-    # two series must not share a name); the right-hand tag maps to 研究内容 (1)…(6)
-    steps = [
-        ("步骤一　需求与调研", "文献综述、竞品分析、需求清单、可行性 Spike 报告", "准备"),
-        ("步骤二　模型设计", "实体关系模型、可扩展事件模式、表结构", "内容(1)"),
-        ("步骤三　采集实现", "会话 / 文件与 Git / 测试报告采集，六步归一化", "内容(2)"),
-        ("步骤四　关联与溯源", "关联算法、变更卡片、证据链与多跳查询", "内容(3)(4)"),
-        ("步骤五　界面与续接", "任务时间线、证据侧栏、任务快照与恢复视图", "内容(5)"),
-        ("步骤六　评估验证", "离线消融、受试者实验、错误分析，结果回流", "内容(6)"),
+    modules = [
+        ("模块一　概念框架与信息模型", "任务、上下文与溯源界定；八实体关系；统一事件模式"),
+        ("模块二　采集、关联与任务边界", "会话/工具/Git/测试接入；变更归一化；关联与边界判定"),
+        ("模块三　变更溯源与任务续接", "变更卡片；双向查询；任务快照；证据绑定摘要"),
+        ("模块四　评估方案", "离线指标；4—5 人试点；错误分析；结果反馈"),
     ]
-    bx, bw, bh = 110, 1400, 124
-    ys = [30 + i * 166 for i in range(6)]
+    bx, bw, bh = 110, 1400, 126
+    ys = [34 + i * 174 for i in range(4)]
     cx = bx + bw / 2
 
-    for i, (title, detail, tag) in enumerate(steps):
+    for i, (title, detail) in enumerate(modules):
         y = ys[i]
-        fill, edge = (BLUE_F, BLUE_E) if i < 5 else (WARM_F, WARM_E)
+        fill, edge = (BLUE_F, BLUE_E) if i < 3 else (WARM_F, WARM_E)
         rbox(d, bx, y, bw, bh, fill, edge)
-        text_left(d, bx + 34, y + 44, title, f_t)
-        text_left(d, bx + 34, y + 92, detail, f_d, SUB)
-        text_right(d, bx + bw - 26, y + bh / 2, tag, f_tag, edge)
-        if i < 5:
+        text_left(d, bx + 34, y + 46, title, f_t)
+        text_left(d, bx + 34, y + 94, detail, f_d, SUB)
+        if i < 3:
             arrow(d, (cx, y + bh + 4), (cx, ys[i + 1] - 6), head=16)
 
-    # feedback loop: step 6 -> step 2
+    # feedback loop: evaluation -> model & methods
     fx = 1690
-    polyline(d, [(bx + bw + 4, ys[5] + bh / 2), (fx, ys[5] + bh / 2),
-                 (fx, ys[1] + bh / 2), (bx + bw + 4, ys[1] + bh / 2)], dashed=True, width=2)
-    for j, line in enumerate(["评估结果", "回流修正", "模型与算法"]):
-        text_left(d, fx + 26, ys[1] + bh / 2 + 150 + j * 44, line, font(30), WARM_E)
+    polyline(d, [(bx + bw + 4, ys[3] + bh / 2), (fx, ys[3] + bh / 2),
+                 (fx, ys[0] + bh / 2), (bx + bw + 4, ys[0] + bh / 2)], dashed=True, width=2)
+    for j, line in enumerate(["评估结果", "反馈修正", "模型与方法"]):
+        text_left(d, fx + 26, ys[0] + bh / 2 + 120 + j * 44, line, font(30), WARM_E)
 
     im.save(OUT / "fig1-route.png", dpi=(300, 300))
 
 
 # --------------------------------------------------------------------------- fig 2
-def fig_arch():
+def fig_model():
     H = 1080
     im = Image.new("RGB", (W, H), "white")
     d = ImageDraw.Draw(im)
-    f_band, f_item, f_note = font(38, True), font(31), font(27)
-    # the analysis row carries four boxes, so its widest label (实体链接与位置映射, 9 glyphs)
-    # needs a 29 px face to keep a visible side padding inside a ~281 px box
-    band_fs = {"分析与关联层": 29}
+    f_title, f_sub, f_rel = font(36, True), font(26), font(27)
+    f_note = font(27)
 
-    bands = [
-        ("交互层", ["任务时间线", "变更证据侧栏", "恢复视图"], 50, BLUE_F, BLUE_E),
-        ("分析与关联层", ["归一化与边界判定", "实体链接与位置映射", "证据链构建", "摘要与证据校验"],
-         295, BLUE_F, BLUE_E),
-        ("模型与存储层", ["SQLite 实体表", "FTS5 全文索引", "变更卡片与快照"], 540, BLUE_F, BLUE_E),
-        ("接入层", ["会话事件\nhooks / stream-json", "文件系统与 Git", "测试报告与命令输出"],
-         785, GRAY_F, GRAY_E),
-    ]
-    band_h, label_w = 190, 240
-    left, right = 40, 1470
+    boxes = {
+        "task":      (700, 34, 600, 118, "开发任务（Task）", "目标、状态、起止时间", BLUE_F, BLUE_E),
+        "check":     (1480, 34, 470, 118, "检查点（Checkpoint）", "阶段快照、恢复入口", WARM_F, WARM_E),
+        "turn":      (80, 268, 380, 118, "对话轮次（Turn）", "用户与智能体的轮次", BLUE_F2, BLUE_E),
+        "msg":       (580, 268, 380, 118, "消息（Message）", "请求、回复、引用", BLUE_F2, BLUE_E),
+        "tool":      (1080, 268, 380, 118, "工具调用（ToolCall）", "命令、参数、结果", BLUE_F2, BLUE_E),
+        "change":    (580, 498, 380, 118, "文件变更（hunk）", "内容哈希、路径、位置", BLUE_F, BLUE_E),
+        "test":      (1080, 498, 380, 118, "测试运行（TestRun）", "命令、退出码、环境", BLUE_F2, BLUE_E),
+        "case":      (1080, 728, 380, 118, "测试用例结果", "用例、状态、耗时", BLUE_F2, BLUE_E),
+    }
 
-    for name, items, y, fill, edge in bands:
-        d.rounded_rectangle([left, y, right, y + band_h], radius=18, fill=BAND, outline=BAND_E, width=3)
-        text_at(d, left + label_w / 2, y + band_h / 2, name, f_band, (40, 52, 70))
-        area_x0 = left + label_w + 8
-        area_x1 = right - 16
-        gap = 14
-        n = len(items)
-        iw = (area_x1 - area_x0 - gap * (n - 1)) / n
-        f_body = font(band_fs[name]) if name in band_fs else f_item
-        for i, it in enumerate(items):
-            x = area_x0 + i * (iw + gap)
-            rbox(d, x, y + 30, iw, band_h - 60, fill, edge, radius=12, width=2)
-            lines = it.split("\n")
-            base = y + band_h / 2 - (len(lines) - 1) * 20
-            for k, line in enumerate(lines):
-                text_at(d, x + iw / 2, base + k * 40, line, f_body if len(lines) == 1 else f_note)
+    def box(key):
+        x, y, w, h, title, sub, fill, edge = boxes[key]
+        rbox(d, x, y, w, h, fill, edge)
+        text_at(d, x + w / 2, y + 40, title, f_title)
+        text_at(d, x + w / 2, y + 82, sub, f_sub, SUB)
+        return x, y, w, h
 
-    # upward data-flow arrows with the data form on each gap
-    gaps = [
-        (785, 730, "原始事件"),
-        (540, 485, "统一事件与实体表"),
-        (295, 240, "证据链与任务快照"),
-    ]
-    for y_from, y_to, note in gaps:
-        for x in (641, 1101):
-            arrow(d, (x, y_from - 6), (x, y_to + 6), head=15)
-        text_at(d, 871, (y_from + y_to) / 2, note, f_note, SUB)
+    for key in boxes:
+        box(key)
 
-    # LLM side service
-    lx0, lx1, ly0, ly1 = 1600, 1970, 150, 610
-    rbox(d, lx0, ly0, lx1 - lx0, ly1 - ly0, WARM_F, WARM_E, radius=18, width=3)
-    text_at(d, (lx0 + lx1) / 2, ly0 + 46, "大语言模型服务", font(32, True))
-    for i, t in enumerate(["任务摘要生成", "修改意图归纳", "缺失关联补全", "输出证据绑定"]):
-        text_at(d, (lx0 + lx1) / 2, ly0 + 112 + i * 62, t, f_note, SUB)
+    # relations
+    arrow(d, (1000, 152), (270, 268), head=15)
+    tag(d, 635, 205, "包含", f_rel)
 
-    mid = (right + lx0) / 2
-    arrow(d, (right + 4, 460), (lx0 - 6, 460), color=WARM_E, width=3)
-    text_at(d, mid, 432, "调用", font(26), WARM_E)
-    arrow(d, (lx0 - 6, 150), (right + 4, 150), color=WARM_E, width=3)
-    text_at(d, mid, 122, "结论", font(26), WARM_E)
-    arrow(d, (lx0 - 6, 380), (right + 4, 380), color=WARM_E, width=2, dashed=True)
-    text_at(d, mid, 352, "证据 id", font(26), WARM_E)
-    text_at(d, (lx0 + lx1) / 2, ly1 + 34, "校验失败则弃答", f_note, WARM_E)
+    arrow(d, (460, 327), (580, 327), head=13)
+    tag(d, 520, 296, "包含", f_rel)
 
-    im.save(OUT / "fig2-arch.png", dpi=(300, 300))
+    arrow(d, (960, 327), (1080, 327), head=13)
+    tag(d, 1020, 296, "触发", f_rel)
+
+    arrow(d, (1270, 386), (960, 498), head=15)
+    tag(d, 1115, 442, "产出", f_rel)
+
+    arrow(d, (960, 557), (1080, 557), head=13)
+    tag(d, 1020, 526, "验证", f_rel)
+
+    arrow(d, (1270, 616), (1270, 728), head=15)
+    tag(d, 1270, 672, "产出", f_rel)
+
+    arrow(d, (1300, 93), (1480, 93), color=WARM_E, head=13, dashed=True)
+    tag(d, 1390, 62, "快照", f_rel, WARM_E)
+
+    # self loop: later evolution of the same hunk
+    polyline(d, [(580, 498), (500, 498), (500, 616), (580, 616)], color=WARM_E, width=2, dashed=True)
+    tag(d, 452, 557, "演化", f_rel, WARM_E)
+
+    # legend
+    ly = 930
+    d.line([(150, ly), (250, ly)], fill=BLUE_E, width=3)
+    d.polygon([(250, ly), (236, ly - 9), (236, ly + 9)], fill=BLUE_E)
+    text_left(d, 270, ly, "包含 / 触发 / 产出 / 验证", f_note, SUB)
+    d.line([(700, ly), (800, ly)], fill=WARM_E, width=2)
+    d.polygon([(800, ly), (786, ly - 9), (786, ly + 9)], fill=WARM_E)
+    text_left(d, 820, ly, "快照 / 演化（回退、重写）", f_note, SUB)
+    text_left(d, 150, 995, "箭头方向表示证据来源到证据结果；所有实体以 task_id 归属开发任务，hunk 以内容哈希标识。", f_note, SUB)
+
+    im.save(OUT / "fig2-model.png", dpi=(300, 300))
 
 
 # --------------------------------------------------------------------------- fig 3
 def fig_gantt():
-    H = 940
+    H = 840
     im = Image.new("RGB", (W, H), "white")
     d = ImageDraw.Draw(im)
-    f_lbl, f_tick, f_ms = font(34), font(30), font(28)
+    f_lbl, f_tick, f_ms, f_note = font(32), font(28), font(28), font(27)
 
-    stages = [
-        ("一　调研与 spike", date(2026, 11, 2), date(2026, 11, 15)),
-        ("二　开题", date(2026, 11, 16), date(2026, 11, 30)),
-        ("三　模型设计", date(2026, 12, 1), date(2026, 12, 20)),
-        ("四　采集与边界", date(2026, 12, 21), date(2027, 1, 10)),
-        ("五　中期检查", date(2027, 1, 11), date(2027, 1, 20)),
-        ("六　关联与溯源", date(2027, 1, 21), date(2027, 2, 20)),
-        ("七　界面与续接", date(2027, 2, 21), date(2027, 3, 15)),
-        ("八　数据与标注", date(2027, 3, 16), date(2027, 3, 31)),
-        ("九　实验与分析", date(2027, 4, 1), date(2027, 4, 20)),
-        ("十　论文初稿", date(2027, 4, 21), date(2027, 5, 10)),
-        ("十一　修改送审", date(2027, 5, 11), date(2027, 5, 25)),
-        ("十二　答辩", date(2027, 5, 26), date(2027, 5, 31)),
+    phases = [
+        ("1　文献研究与产品调研", 1, 8),
+        ("2　关键方法设计与实现", 9, 14),
+        ("3　系统设计与实现", 15, 20),
+        ("4　系统验证与测试", 21, 22),
+        ("5　毕业设计论文撰写", 23, 28),
+        ("6　论文审阅与修改", 29, 32),
     ]
-    d0, d1 = date(2026, 10, 26), date(2027, 6, 6)
-    total = (d1 - d0).days
-    x0, x1 = 450, 1940
-    top, row_h = 140, 58
+    x0, x1 = 430, 1940
+    total = 32
+    ww = (x1 - x0) / total
+    top, row_h = 170, 80
+    axis_bottom = top + row_h * len(phases)
 
-    def xpos(dt):
-        return x0 + (dt - d0).days / total * (x1 - x0)
+    def xpos(week):
+        """Left edge of a teaching week (1-based)."""
+        return x0 + (week - 1) * ww
 
-    axis_bottom = top + row_h * len(stages)
+    # grid + week ticks
+    for week in (1, 4, 8, 12, 16, 20, 24, 28, 32):
+        x = xpos(week)
+        d.line([(x, top - 10), (x, axis_bottom)], fill=GRID, width=2)
+        text_at(d, x, axis_bottom + 30, f"第{week}周", f_tick, SUB)
 
-    # month grid
-    m = date(2026, 11, 1)
-    while m <= d1:
-        x = xpos(m)
-        d.line([(x, top - 8), (x, axis_bottom)], fill=GRID, width=2)
-        text_at(d, x, axis_bottom + 30, f"{m.year}-{m.month:02d}", f_tick, (71, 85, 105))
-        m = date(m.year + (1 if m.month == 12 else 0), 1 if m.month == 12 else m.month + 1, 1)
-
-    # bars first, labels afterwards so nothing can occlude the text
-    for i, (_, s, e) in enumerate(stages):
+    # bars
+    for i, (_, start, end) in enumerate(phases):
         y = top + i * row_h
-        bx0, bx1 = xpos(s), xpos(e)
-        d.rounded_rectangle([bx0, y + 10, max(bx1, bx0 + 8), y + row_h - 10],
-                            radius=9, fill=BLUE_F, outline=BLUE_E, width=2)
+        bx0, bx1 = xpos(start) + 2, xpos(end) + ww - 2
+        fill = BLUE_F if i % 2 == 0 else BLUE_F2
+        d.rounded_rectangle([bx0, y + 12, max(bx1, bx0 + 8), y + row_h - 12],
+                            radius=9, fill=fill, outline=BLUE_E, width=2)
 
-    for i, (name, _, _) in enumerate(stages):
+    for i, (name, _, _) in enumerate(phases):
         y = top + i * row_h
-        text_right(d, x0 - 22, y + row_h / 2, name, f_lbl, INK)
+        text_right(d, x0 - 24, y + row_h / 2, name, f_lbl, INK)
 
-    # milestones as diamonds on the axis, labels above the plot
-    for dt, txt in [(date(2026, 11, 30), "11-30 开题"),
-                    (date(2027, 1, 20), "01-20 中期"),
-                    (date(2027, 5, 25), "05-25 送审")]:
-        x = xpos(dt)
-        d.line([(x, top - 4), (x, axis_bottom)], fill=WARM_E, width=2)
-        cy = top - 46
-        r = 11
-        d.polygon([(x, cy - r), (x + r, cy), (x, cy + r), (x - r, cy)], fill=WARM_E)
-        text_at(d, x, cy - 34, txt, f_ms, WARM_E)
+    # milestone: proposal defence in week 9
+    mx = xpos(9)
+    d.line([(mx, top - 8), (mx, axis_bottom)], fill=WARM_E, width=2)
+    cy = top - 46
+    r = 12
+    d.polygon([(mx, cy - r), (mx + r, cy), (mx, cy + r), (mx - r, cy)], fill=WARM_E)
+    text_at(d, mx, cy - 36, "第 9 周　开题答辩", f_ms, WARM_E)
 
     d.line([(x0, axis_bottom), (x1, axis_bottom)], fill=(148, 163, 184), width=2)
+    text_left(d, x0, axis_bottom + 78, "教学周编号按学院日历；中期检查、答辩按学院统一安排，具体以学院通知为准。", f_note, SUB)
+
     im.save(OUT / "fig3-gantt.png", dpi=(300, 300))
 
 
 if __name__ == "__main__":
     fig_route()
-    fig_arch()
+    fig_model()
     fig_gantt()
     for f in sorted(OUT.glob("*.png")):
         im = Image.open(f)

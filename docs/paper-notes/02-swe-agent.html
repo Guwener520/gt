@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>给语言模型造一个顺手的操作台：SWE-agent 的智能体—计算机接口｜文献精读</title>
+<style>
+/* ===== 共享设计系统（请勿修改，校验脚本会逐字节比对） ===== */
+:root{
+  --ink:#191c1f; --ink-2:#3d4450; --ink-3:#6b7280;
+  --paper:#fbfaf7; --card:#ffffff; --line:#e6e2d9; --line-2:#f0ece3;
+  --accent:#4f46e5; --accent-soft:#eef0fe;
+  --key:#0f766e; --key-soft:#e7f5f2;
+  --warn:#b42318; --warn-soft:#fdeceb;
+  --analogy:#7c3aed; --analogy-soft:#f4edfd;
+  --relate:#b45309; --relate-soft:#fdf4e4;
+  --radius:14px; --measure:53rem;
+  --font:"Noto Sans SC","Source Han Sans SC","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono","Cascadia Code",Consolas,"Courier New",monospace;
+}
+body[data-cluster="b"]{--accent:#0f766e;--accent-soft:#e3f2ef}
+body[data-cluster="c"]{--accent:#a16207;--accent-soft:#fbf1dc}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);
+  font-size:17px;line-height:1.85;-webkit-font-smoothing:antialiased;
+}
+.progress{position:fixed;inset:0 0 auto 0;height:3px;background:transparent;z-index:50}
+.progress-bar{height:100%;width:0;background:var(--accent);transition:width .1s linear}
+
+/* ---------- 页头 ---------- */
+.hero{background:linear-gradient(180deg,var(--accent-soft),transparent 92%);border-bottom:1px solid var(--line);padding:2.6rem 0 2.2rem}
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem}
+.crumb{font-size:.82rem;color:var(--ink-3);margin-bottom:1.4rem;letter-spacing:.02em}
+.crumb a{color:var(--accent);text-decoration:none;font-weight:600}
+.crumb a:hover{text-decoration:underline}
+.crumb .sep{margin:0 .5em;opacity:.5}
+.hero h1{font-size:clamp(1.62rem,4vw,2.35rem);line-height:1.32;margin:0 0 .5rem;letter-spacing:-.01em;font-weight:800}
+.hero .en{font-size:.95rem;color:var(--ink-3);margin:0 0 1.1rem;font-style:italic;line-height:1.5}
+.hero .byline{font-size:.9rem;color:var(--ink-2);margin:0 0 1rem}
+.hero .byline strong{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:.45rem;margin:0 0 1.3rem}
+.chip{font-size:.78rem;padding:.2rem .6rem;border-radius:999px;background:var(--card);border:1px solid var(--line);color:var(--ink-2);white-space:nowrap}
+.chip.hot{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+.verdict{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+  border-radius:0 var(--radius) var(--radius) 0;padding:1rem 1.2rem;font-size:1.02rem;color:var(--ink-2)}
+.verdict b{color:var(--ink)}
+
+/* ---------- 目录 ---------- */
+.toc{position:sticky;top:0;z-index:40;background:rgba(251,250,247,.93);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);font-size:.83rem}
+.toc .wrap{display:flex;gap:.15rem;overflow-x:auto;padding-top:.55rem;padding-bottom:.55rem;scrollbar-width:none}
+.toc .wrap::-webkit-scrollbar{display:none}
+.toc a{color:var(--ink-3);text-decoration:none;padding:.22rem .6rem;border-radius:7px;white-space:nowrap}
+.toc a:hover{background:var(--line-2);color:var(--ink)}
+.toc a.on{background:var(--accent);color:#fff;font-weight:600}
+
+/* ---------- 正文 ---------- */
+main{padding:2.4rem 0 4rem}
+section{margin:0 0 3.1rem;scroll-margin-top:4.2rem}
+h2{font-size:1.32rem;margin:0 0 1.1rem;font-weight:800;letter-spacing:-.005em;
+  display:flex;align-items:baseline;gap:.6rem;padding-bottom:.5rem;border-bottom:2px solid var(--line)}
+h2 .n{font-family:var(--mono);font-size:.82rem;color:var(--accent);font-weight:700;letter-spacing:.06em}
+h3{font-size:1.06rem;margin:1.9rem 0 .7rem;font-weight:700;color:var(--ink)}
+h4{font-size:.95rem;margin:1.4rem 0 .5rem;font-weight:700;color:var(--ink-2)}
+p{margin:0 0 1.05rem}
+ul,ol{margin:0 0 1.05rem;padding-left:1.5rem}
+li{margin:.34rem 0}
+strong{font-weight:700}
+a{color:var(--accent)}
+.term{font-family:var(--mono);font-size:.88em;background:var(--line-2);padding:.08em .38em;border-radius:5px;color:var(--ink-2)}
+mark{background:#fff3bf;color:inherit;padding:0 .15em;border-radius:3px}
+
+/* ---------- 组件：导读框 ---------- */
+.lead{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.3rem 1.5rem;margin:0 0 1.6rem}
+.lead h4{margin:0 0 .55rem;font-size:.8rem;letter-spacing:.12em;color:var(--accent);text-transform:uppercase}
+.lead p:last-child{margin-bottom:0}
+
+/* ---------- 组件：提示块 ---------- */
+.callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.4rem 0;font-size:.96rem;border:1px solid transparent}
+.callout>:last-child{margin-bottom:0}
+.callout .tag{display:block;font-size:.76rem;font-weight:800;letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase}
+.callout.key{background:var(--key-soft);border-color:#bfe3dc}
+.callout.key .tag{color:var(--key)}
+.callout.analogy{background:var(--analogy-soft);border-color:#ddd0f7}
+.callout.analogy .tag{color:var(--analogy)}
+.callout.warn{background:var(--warn-soft);border-color:#f5c9c4}
+.callout.warn .tag{color:var(--warn)}
+.callout.relate{background:var(--relate-soft);border-color:#f0d9ab}
+.callout.relate .tag{color:var(--relate)}
+.callout.note{background:var(--line-2);border-color:var(--line)}
+.callout.note .tag{color:var(--ink-3)}
+
+/* ---------- 组件：原文引用 ---------- */
+blockquote{margin:1.3rem 0;padding:.9rem 1.2rem .9rem 1.4rem;border-left:3px solid var(--accent);
+  background:var(--card);border-radius:0 10px 10px 0;font-size:.95rem;color:var(--ink-2)}
+blockquote p{margin:0 0 .5rem}
+blockquote p:last-child{margin-bottom:0}
+blockquote .src{display:block;margin-top:.55rem;font-size:.78rem;color:var(--ink-3);font-style:normal;font-family:var(--mono)}
+
+/* ---------- 组件：数据表 ---------- */
+.tw{overflow-x:auto;margin:1.3rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:32rem}
+caption{caption-side:top;text-align:left;font-size:.83rem;color:var(--ink-3);padding:.8rem 1rem .2rem;font-weight:600}
+th,td{padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--line-2);vertical-align:top}
+thead th{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:.84rem;white-space:nowrap;
+  border-bottom:1px solid var(--line)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fdfcfa}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.best{font-weight:700;color:var(--accent)}
+
+/* ---------- 组件：图 ---------- */
+figure{margin:1.6rem 0;text-align:center}
+figure svg{max-width:100%;height:auto}
+figure .frame{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1.2rem}
+figcaption{font-size:.83rem;color:var(--ink-3);margin-top:.65rem;text-align:center;line-height:1.6}
+
+/* ---------- 组件：流程 ---------- */
+.steps{list-style:none;padding:0;margin:1.4rem 0;counter-reset:s}
+.steps>li{position:relative;padding:0 0 1.15rem 2.5rem;border-left:2px solid var(--line);margin-left:.75rem}
+.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+.steps>li::before{counter-increment:s;content:counter(s);position:absolute;left:-.8rem;top:.1rem;
+  width:1.5rem;height:1.5rem;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:.78rem;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:var(--mono)}
+.steps>li b{display:block;margin-bottom:.2rem}
+
+/* ---------- 组件：卡片网格 ---------- */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(13.5rem,1fr));gap:.9rem;margin:1.4rem 0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.card h4{margin:0 0 .4rem;font-size:.93rem;color:var(--accent)}
+.card p{margin:0;font-size:.89rem;color:var(--ink-2);line-height:1.7}
+
+/* ---------- 组件：对比 ---------- */
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin:1.4rem 0}
+.vs>div{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem}
+.vs>div:first-child{border-top:3px solid var(--warn)}
+.vs>div:last-child{border-top:3px solid var(--key)}
+.vs h4{margin:0 0 .5rem;font-size:.9rem}
+.vs>div:first-child h4{color:var(--warn)}
+.vs>div:last-child h4{color:var(--key)}
+.vs ul{margin:0;padding-left:1.1rem;font-size:.88rem;color:var(--ink-2)}
+@media (max-width:34rem){.vs{grid-template-columns:1fr}}
+
+/* ---------- 组件：大数字 ---------- */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.9rem;margin:1.4rem 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;text-align:center}
+.stat .v{font-family:var(--mono);font-size:1.55rem;font-weight:700;color:var(--accent);line-height:1.2;font-variant-numeric:tabular-nums}
+.stat .k{font-size:.8rem;color:var(--ink-3);margin-top:.3rem;line-height:1.5}
+
+/* ---------- 组件：术语表 ---------- */
+dl.glossary{margin:1.3rem 0;padding:0}
+dl.glossary dt{font-weight:700;font-size:.94rem;margin-top:.95rem}
+dl.glossary dt:first-child{margin-top:0}
+dl.glossary dd{margin:.15rem 0 0;font-size:.9rem;color:var(--ink-2);padding-left:1rem;border-left:2px solid var(--line-2)}
+
+/* ---------- 组件：追问 ---------- */
+.qa{margin:1.3rem 0}
+.qa details{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin-bottom:.6rem}
+.qa summary{cursor:pointer;font-weight:600;font-size:.94rem;color:var(--ink)}
+.qa details[open] summary{margin-bottom:.5rem;color:var(--accent)}
+.qa p{margin:0;font-size:.9rem;color:var(--ink-2)}
+
+/* ---------- 页脚 ---------- */
+.pager{display:flex;justify-content:space-between;gap:1rem;margin:3rem 0 0;padding-top:1.6rem;border-top:1px solid var(--line);font-size:.88rem}
+.pager a{display:block;text-decoration:none;color:var(--ink-2);background:var(--card);border:1px solid var(--line);
+  border-radius:10px;padding:.7rem 1rem;flex:1}
+.pager a:hover{border-color:var(--accent)}
+.pager .dir{font-size:.74rem;color:var(--ink-3);display:block;margin-bottom:.15rem}
+footer{text-align:center;font-size:.8rem;color:var(--ink-3);padding:2rem 0 3rem;line-height:1.8}
+
+/* ---------- 主题切换 ---------- */
+.theme{position:fixed;right:1rem;bottom:1rem;z-index:60;width:2.6rem;height:2.6rem;border-radius:50%;
+  border:1px solid var(--line);background:var(--card);color:var(--ink-2);cursor:pointer;font-size:1rem;
+  box-shadow:0 2px 10px rgba(0,0,0,.08)}
+body.dark{--ink:#e8e6e1;--ink-2:#b8bcc4;--ink-3:#8b919b;--paper:#16181c;--card:#1e2126;
+  --line:#2e333a;--line-2:#262a30;--accent-soft:#232838;--key-soft:#16302c;--analogy-soft:#241f33;
+  --warn-soft:#331c1b;--relate-soft:#31251a}
+body.dark .toc{background:rgba(22,24,28,.93)}
+body.dark tbody tr:hover{background:#22262c}
+body.dark mark{background:#4d4110;color:#f5e6a8}
+body.dark blockquote{background:#1e2126}
+
+/* ---------- 打印 ---------- */
+@media print{
+  .toc,.progress,.theme,.pager{display:none}
+  body{font-size:10.5pt;background:#fff}
+  section{break-inside:avoid-page;margin-bottom:1.4rem}
+  h2{break-after:avoid}
+  .hero{background:none;padding:0 0 1rem}
+  a{color:inherit;text-decoration:none}
+  figure,.tw,blockquote,.callout{break-inside:avoid}
+}
+@media (max-width:40rem){
+  body{font-size:16px}
+  .wrap{padding:0 1.05rem}
+  .hero{padding:1.8rem 0 1.5rem}
+  .pager{flex-direction:column}
+}
+</style>
+</head>
+<body data-cluster="b">
+<div class="progress"><div class="progress-bar" id="bar"></div></div>
+<button class="theme" id="theme" title="切换深色模式" aria-label="切换深色模式">◐</button>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="crumb"><a href="index.html">← 文献精读总览</a><span class="sep">/</span><span>第 2 篇 · SWE-agent</span></div>
+    <h1>不是模型变强了，是操作台变顺手了：SWE-agent 与"智能体—计算机接口"</h1>
+    <p class="en">SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering</p>
+    <p class="byline"><strong>John Yang, Carlos E. Jimenez et al.</strong> · NeurIPS 2024 · 原文 118 页（正文约 20 页）</p>
+    <div class="chips">
+      <span class="chip hot">方法 / 框架</span>
+      <span class="chip">ACI 接口设计</span>
+      <span class="chip">与本课题关联 ★★★★★</span>
+      <span class="chip">精读用时 ≈ 22 分钟</span>
+    </div>
+    <div class="verdict"><b>一句话结论：</b>不改模型权重，只重新设计"模型看到的界面和能用的命令"，GPT-4 Turbo 在 SWE-bench 上的解决率从 RAG 的 1.31% 提到 12.47%（原文 p.5）——界面设计本身就是一种能力。</div>
+  </div>
+</header>
+
+<nav class="toc"><div class="wrap">
+  <a href="#s1">导读</a><a href="#s2">问题</a><a href="#s3">核心思想</a><a href="#s4">方法拆解</a>
+  <a href="#s5">实验与结果</a><a href="#s6">局限</a><a href="#s7">与本课题</a><a href="#s8">原文金句</a>
+  <a href="#s9">术语表</a><a href="#s10">追问</a>
+</div></nav>
+
+<main class="wrap">
+
+<!-- ============ 1 导读 ============ -->
+<section id="s1">
+  <h2><span class="n">01</span>导读：三分钟建立坐标系</h2>
+
+  <div class="lead">
+    <h4>30 秒读懂</h4>
+    <p>上一篇 SWE-bench 出了题，但当时最好的做法还是"检索几个文件塞给模型、让它一次写出补丁"——非交互、单轮。SWE-agent 换了个问法：如果让模型像人一样循环地看文件、搜代码、改代码、跑测试，它需要什么样的界面？答案是一套为语言模型重设计的命令与反馈格式，即智能体—计算机接口（Agent-Computer Interface, ACI）。只改接口，GPT-4 Turbo 的解决率就到 12.47%（原文 p.5）。</p>
+  </div>
+
+  <p>它的位置很特别：SWE-bench 定义"考什么"，SWE-agent 定义"怎么交互"，第 03 篇的 OpenHands 把接口做成可插拔组件库——"题—法—台"。但它的核心贡献不是一个 agent 框架，而是把"界面设计"提升成了研究对象：论文用整整一节消融证明，换一种搜索界面或编辑格式，分数能差 6 到 8 个百分点（原文 p.6 表 3）。</p>
+
+  <div class="callout note">
+    <span class="tag">阅读建议</span>
+    <p>正文重点读 §2（四条原则）、§3（四个部件）、§5（主结果与消融）。附录 C 是完整提示词模板，附录 B.4 是失败模式分类，做系统设计时比正文更有用。</p>
+  </div>
+</section>
+
+<!-- ============ 2 问题 ============ -->
+<section id="s2">
+  <h2><span class="n">02</span>它要解决什么问题</h2>
+  <p>最直接的做法是把 Linux shell 原样交给模型，然后会看到一堆怪事：<code>cat</code> 一个一千行的文件，上下文瞬间塞满；<code>sed -i</code> 改完什么都不输出，模型不知道改对没有；<code>grep</code> 出两百条结果，模型会一条条看下去，直到预算烧光。这些对人不是问题——工程师有肌肉记忆和常识——但模型每一步都要花 token，也没有"扫一眼"这回事。</p>
+
+  <p>所以实质不是"模型不够聪明"，而是<strong>它用着一个不是为它设计的界面</strong>。人用的工具默认了人的感知带宽、记忆容量与纠错能力；模型这三项都不同，它的"上下文"还是有价格、会被稀释的稀缺资源。</p>
+
+  <div class="vs">
+    <div><h4>之前的做法</h4><ul>
+      <li>检索后一次性生成补丁（非交互 RAG）</li>
+      <li>或者把原生 shell 直接交给模型（交互，但没为它设计）</li>
+    </ul></div>
+    <div><h4>这篇的做法</h4><ul>
+      <li>固定模型不动，只重新设计动作与反馈（原文 p.3）</li>
+      <li>命令少而专，文档一两句话（原文 p.3）</li>
+      <li>用消融证明"哪种界面更好"，而不是凭直觉堆工具（原文 p.6）</li>
+    </ul></div>
+  </div>
+
+  <div class="callout analogy">
+    <span class="tag">打个比方</span>
+    <p>这不是给盲人配更好的眼镜，而是重铺盲道、改扶手高度——同一个世界，换一套接口。人机交互（HCI）研究了几十年"界面怎么配合人的直觉"，这篇问的是：界面怎么配合模型的"直觉"。</p>
+  </div>
+</section>
+
+<!-- ============ 3 核心思想 ============ -->
+<section id="s3">
+  <h2><span class="n">03</span>核心思想：一句话与一张图</h2>
+  <p><strong>一句话：语言模型是一类新的终端用户，有自己的能力与限制，因此值得为它专门设计界面。</strong>ACI 同时规定两件事——能做什么<em>动作</em>、环境<em>怎么回话</em>；两者一起决定它每一步看到什么、能走多远。</p>
+
+  <figure>
+    <div class="frame">
+      <svg viewBox="0 0 720 424" role="img" aria-label="同一次代码编辑：左边是原生 Shell 的多步无反馈流程，右边是 SWE-agent ACI 的一步有反馈流程">
+        <defs>
+          <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 z" fill="#6b7280"/></marker>
+        </defs>
+        <rect x="8" y="8" width="342" height="392" rx="12" fill="#fdf4f3" stroke="#e3b3ae" stroke-width="1.5"/>
+        <rect x="370" y="8" width="342" height="392" rx="12" fill="#e9f6f3" stroke="#0f766e" stroke-width="1.5"/>
+        <text x="179" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#b42318">① 原生 Shell：多步、无反馈</text>
+        <text x="541" y="32" text-anchor="middle" font-size="13" font-weight="700" fill="#0f766e">② SWE-agent ACI：一步、有反馈</text>
+
+        <rect x="20" y="46" width="318" height="40" rx="7" fill="#ffffff" stroke="#e3b3ae"/>
+        <text x="32" y="71" font-size="11.5" font-family="monospace" fill="#191c1f">$ cat parsing/mathematica.py</text>
+        <line x1="179" y1="86" x2="179" y2="102" stroke="#6b7280" marker-end="url(#ar2)"/>
+        <rect x="20" y="104" width="318" height="40" rx="7" fill="#ffffff" stroke="#e3b3ae"/>
+        <text x="32" y="122" font-size="11.5" fill="#191c1f">整个文件 1,079 行全部涌入上下文</text>
+        <text x="32" y="138" font-size="11" fill="#b42318">→ 上下文被占满，注意力被稀释</text>
+        <line x1="179" y1="144" x2="179" y2="160" stroke="#6b7280" marker-end="url(#ar2)"/>
+        <rect x="20" y="162" width="318" height="40" rx="7" fill="#ffffff" stroke="#e3b3ae"/>
+        <text x="32" y="186" font-size="11.5" font-family="monospace" fill="#191c1f">$ sed -i 's/.../.../' file</text>
+        <line x1="179" y1="202" x2="179" y2="218" stroke="#6b7280" marker-end="url(#ar2)"/>
+        <rect x="20" y="220" width="318" height="40" rx="7" fill="#ffffff" stroke="#e3b3ae"/>
+        <text x="32" y="238" font-size="11.5" fill="#191c1f">没有任何输出：改对了吗？改到哪了？</text>
+        <text x="32" y="254" font-size="11" fill="#b42318">→ 模型只能再 cat 一遍确认</text>
+        <line x1="179" y1="260" x2="179" y2="276" stroke="#6b7280" marker-end="url(#ar2)"/>
+        <rect x="20" y="278" width="318" height="44" rx="7" fill="#ffffff" stroke="#e3b3ae"/>
+        <text x="32" y="296" font-size="11.5" fill="#191c1f">再读一遍 → 上下文再爆一次</text>
+        <text x="32" y="313" font-size="11" fill="#b42318">循环累积，错误无法回滚</text>
+        <text x="179" y="348" text-anchor="middle" font-size="11.5" fill="#b42318">行号、改前改后、语法状态都要模型自己记</text>
+        <text x="179" y="368" text-anchor="middle" font-size="11.5" fill="#6b7280">原文 p.7 图 6 的 "No edit" 一侧</text>
+
+        <rect x="382" y="46" width="318" height="40" rx="7" fill="#ffffff" stroke="#0f766e"/>
+        <text x="394" y="71" font-size="11.5" font-family="monospace" fill="#191c1f">$ open parsing/mathematica.py</text>
+        <line x1="541" y1="86" x2="541" y2="102" stroke="#6b7280" marker-end="url(#ar2)"/>
+        <rect x="382" y="104" width="318" height="52" rx="7" fill="#ffffff" stroke="#0f766e"/>
+        <text x="394" y="122" font-size="11.5" fill="#191c1f">100 行窗口 + 行号 + 总行数</text>
+        <text x="394" y="138" font-size="11" fill="#0f766e">"（上方省略 400 行）" 明确告知位置</text>
+        <text x="394" y="152" font-size="10.5" fill="#6b7280">窗口大小是消融出来的最优值</text>
+        <line x1="541" y1="156" x2="541" y2="172" stroke="#6b7280" marker-end="url(#ar2)"/>
+        <rect x="382" y="174" width="318" height="52" rx="7" fill="#ffffff" stroke="#0f766e"/>
+        <text x="394" y="192" font-size="11.5" font-family="monospace" fill="#191c1f">edit 404:407 … end_of_edit</text>
+        <text x="394" y="210" font-size="11" fill="#0f766e">起止行号是参数，不是自然语言</text>
+        <line x1="541" y1="226" x2="541" y2="242" stroke="#6b7280" marker-end="url(#ar2)"/>
+        <rect x="382" y="244" width="318" height="52" rx="7" fill="#ffffff" stroke="#0f766e"/>
+        <text x="394" y="262" font-size="11.5" fill="#191c1f">自动重显改后的窗口</text>
+        <text x="394" y="278" font-size="11" fill="#0f766e">+ linter 检查语法</text>
+        <line x1="541" y1="296" x2="541" y2="312" stroke="#6b7280" marker-end="url(#ar2)"/>
+        <rect x="382" y="314" width="318" height="44" rx="7" fill="#ffffff" stroke="#0f766e"/>
+        <text x="394" y="332" font-size="11.5" fill="#191c1f">语法错 → 编辑不落地，直接报错</text>
+        <text x="394" y="349" font-size="11" fill="#0f766e">→ 错误在发生的那一步被截断</text>
+        <text x="541" y="380" text-anchor="middle" font-size="11.5" fill="#0f766e">模型只需要看"改后对不对"，不用记状态</text>
+        <text x="541" y="398" text-anchor="middle" font-size="11.5" fill="#6b7280">原文 p.7 图 6 的 "w/ Linting" 一侧</text>
+      </svg>
+    </div>
+    <figcaption>图 1　同一件事（改五行代码）在两种界面下的形状完全不同。左边把状态维护的负担压在模型身上，右边把状态显式地摆出来，并在错误的当步阻断。</figcaption>
+  </figure>
+
+  <div class="callout key">
+    <span class="tag">关键机制</span>
+    <p>为什么这样设计就 work？四条因果链，正好对应原文 p.3 的四条原则：</p>
+    <p><strong>① 上下文是稀缺且会被稀释的资源 → 反馈必须简洁。</strong>搜索结果最多 50 条、文件一次 100 行、更早的观察压成一行（原文 p.3—p.4）。每一 token 都要付租金。</p>
+    <p><strong>② 动作空间越大，出错面越大 → 命令要少而专。</strong>原生 bash 一个命令几十个选项，模型要读几十行文档才用对；它的文档只有一两句（原文 p.3）。减少的是选择，增加的是成功率。</p>
+    <p><strong>③ 编辑最容易产生级联错误 → 结构化编辑 + 守卫。</strong><code>edit n:m</code> 用行号定位，改完自动重显，接 linter；语法错就不落地（原文 p.4）。错误停在第 N 步。</p>
+    <p><strong>④ 模型没有"肌肉记忆" → 状态必须显式。</strong>行号、总行数、省略多少行，这些对人不用说的元信息必须写进观察，否则模型会"漂移"。</p>
+  </div>
+
+  <p>第 ③ 条被数据证实：2,294 个任务里 51.7% 的轨迹至少失败过一次编辑；单次编辑最终成功率 90.5%，失败一次后就掉到 57.2%（原文 p.8）。错误是<strong>累积性</strong>的，守卫的价值是不让第一次错变成第十次。</p>
+</section>
+
+<!-- ============ 4 方法拆解 ============ -->
+<section id="s4">
+  <h2><span class="n">04</span>方法拆解：四个部件</h2>
+  <p>原文 §3 把 ACI 拆成四块，每块都可单独做消融。下面按"输入 → 做什么 → 输出"写。</p>
+
+  <ol class="steps">
+    <li><b>搜索与导航</b>　输入是字符串或文件名。<code>find_file</code> 按文件名找，<code>search_file</code> 在文件内找，<code>search_dir</code> 在目录内找；输出最多 50 条，超了只给前 50 条并提示细化（原文 p.3）。意图明确——逼模型<strong>改查询</strong>而非<strong>翻结果</strong>。</li>
+    <li><b>文件查看器</b>　输入是路径（可选行号）：<code>open</code> / <code>goto</code> / <code>scroll_up</code> / <code>scroll_down</code>，一次只显示 100 行。输出带行号的窗口，顶部写明路径与总行数，两侧写明省略多少行（原文 p.4、p.17 表 4）。</li>
+    <li><b>文件编辑器</b>　输入是起止行号 + 新内容。做什么：<code>edit n:m</code> 把第 n 到 m 行替换掉，以 <code>end_of_edit</code> 结束。输出自动重显改动后的窗口；同时跑 linter，引入语法错误就<strong>拒绝这次编辑</strong>并回显错误（原文 p.4）。</li>
+    <li><b>上下文管理</b>　输入是整条轨迹。每步要求先写 thought 再给 command；格式不对就报错重试（只保留第一条错误，避免噪声堆叠）；命令无输出时给一句固定话术；最近 5 条之前的观察各压成一行。输出一个长度可控、结构稳定的提示（原文 p.4）。</li>
+  </ol>
+
+  <p>还有个不起眼但重要的设定：模型<strong>每步只做一件事</strong>，且必须显式给出 thought。轨迹因此天然是"决策 + 动作 + 观察"的三元组序列——正是本课题 <span class="term">ToolCall</span> 的最小结构（第 07 节展开）。</p>
+</section>
+
+<!-- ============ 5 实验 ============ -->
+<section id="s5">
+  <h2><span class="n">05</span>实验与结果：数字说明什么</h2>
+  <p>设置：SWE-bench 全量 2,294 条与 Lite 300 条；GPT-4 Turbo（128k）与 Claude 3 Opus（200k）（原文 p.5）；成本上限 4 美元/实例（原文 p.27）。两个对照：RAG（非交互）与 Shell-only（交互，仅原生 bash）。</p>
+
+  <div class="stats">
+    <div class="stat"><div class="v">12.47%</div><div class="k">GPT-4 Turbo 在全量 2,294 条上的解决率（原文 p.5）</div></div>
+    <div class="stat"><div class="v">+64%</div><div class="k">相对 Shell-only 的提升幅度（原文 p.5）</div></div>
+    <div class="stat"><div class="v">8—13×</div><div class="k">相对 RAG 的成本倍数（原文 p.5）</div></div>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>表 1　主结果：解决率（%）与单实例成本（美元），原文 p.6 表 1</caption>
+      <thead><tr><th>设置</th><th>模型</th><th>SWE-bench 全量</th><th>Lite</th><th>成本</th></tr></thead>
+      <tbody>
+        <tr><td>RAG（非交互）</td><td>GPT-4 Turbo</td><td class="num">1.31</td><td class="num">2.67</td><td class="num">$0.13</td></tr>
+        <tr><td>RAG（非交互）</td><td>Claude 3 Opus</td><td class="num">3.79</td><td class="num">4.33</td><td class="num">$0.25</td></tr>
+        <tr><td>Shell-only</td><td>GPT-4 Turbo</td><td class="num">—</td><td class="num">11.00</td><td class="num">$1.46</td></tr>
+        <tr><td>Shell-only（无示例）</td><td>GPT-4 Turbo</td><td class="num">—</td><td class="num">7.33</td><td class="num">$1.46</td></tr>
+        <tr><td><b>SWE-agent</b></td><td>GPT-4 Turbo</td><td class="num best">12.47</td><td class="num best">18.00</td><td class="num">$1.59</td></tr>
+        <tr><td><b>SWE-agent</b></td><td>Claude 3 Opus</td><td class="num">10.46</td><td class="num">13.00</td><td class="num">$2.59</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>三个读数。<strong>一，交互不是答案：</strong>Shell-only 也是交互的，只拿 11.00%；换成重设计的接口才有 18.00%（Lite）。<strong>二，成本与收益不成正比：</strong>相对 RAG 解决率提升 6.7 倍、成本高 8—13 倍（原文 p.5），是从"不可用"变成"勉强可用"。<strong>三，预算不是瓶颈：</strong>93.0% 被解决的任务在预算耗尽前就提交了（原文 p.8）——加预算救不了走错方向的任务。</p>
+
+  <div class="tw">
+    <table>
+      <caption>表 2　ACI 消融（Lite 300 条，GPT-4 Turbo；相对完整配置的变化），原文 p.6 表 3</caption>
+      <thead><tr><th>部件</th><th>变体</th><th>解决率 %</th><th>变化</th></tr></thead>
+      <tbody>
+        <tr><td>完整配置</td><td>—</td><td class="num best">18.0</td><td class="num">—</td></tr>
+        <tr><td>编辑</td><td>去掉编辑动作</td><td class="num">10.3</td><td class="num">↓7.7</td></tr>
+        <tr><td>编辑</td><td>编辑但不加 linter</td><td class="num">15.0</td><td class="num">↓3.0</td></tr>
+        <tr><td>搜索</td><td>迭代式搜索（逐条翻）</td><td class="num">12.0</td><td class="num">↓6.0</td></tr>
+        <tr><td>搜索</td><td>完全去掉搜索</td><td class="num">15.7</td><td class="num">↓2.3</td></tr>
+        <tr><td>查看器</td><td>窗口缩到 30 行</td><td class="num">14.3</td><td class="num">↓3.7</td></tr>
+        <tr><td>查看器</td><td>一次给整个文件</td><td class="num">12.7</td><td class="num">↓5.3</td></tr>
+        <tr><td>上下文</td><td>给完整历史（不压缩）</td><td class="num">15.0</td><td class="num">↓3.0</td></tr>
+        <tr><td>上下文</td><td>去掉演示示例</td><td class="num">16.3</td><td class="num">↓1.7</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>最反直觉的一行是<strong>迭代式搜索（12.0）比完全不做搜索（15.7）还差</strong>。作者解释：给模型一个"逐条翻"的界面，它就会真的逐条翻，把预算耗在穷举上（原文 p.7）。这条比任何单点分数都重要——<strong>界面会塑造行为</strong>。同理，窗口缩到 30 行掉 3.7 个点、给整个文件掉 5.3 个点，说明信息量有最优区间。</p>
+
+  <p>噪声提醒：消融只在 Lite 300 条、单模型上各跑一次，3 个点的差异不稳健——方向可信，数值要打折（原文 p.35 只给了重复运行的平均方差，没有逐项置信区间）。</p>
+</section>
+
+<!-- ============ 6 局限 ============ -->
+<section id="s6">
+  <h2><span class="n">06</span>局限与可质疑之处</h2>
+  <ul>
+    <li><b>作者自述：</b>最终配置的工具集很小；ACI 的设计过程是手工的，靠人反复看轨迹归纳；范围只覆盖编程类任务（原文 p.117—p.118）。</li>
+    <li><b>外部质疑：</b>ACI 的收益会不会只是"更好的提示词工程"？消融的样本量与重复次数都不足以支撑精确数值；两个模型都是闭源，版本一变结论就要重测。</li>
+    <li><b>我的判断：</b></li>
+  </ul>
+
+  <p><strong>一、"ACI 有效"的方向可信，数值不可信。</strong>Lite 只有 300 条，18.0 与 15.7 只差 7 条任务。真正硬的证据是"迭代式搜索比不搜索还差"这种反直觉的方向性结果，它不可能由噪声产生；而"100 行比 30 行好 3.7 个点"这种精确说法，换个模型很可能就变。</p>
+
+  <p><strong>二、ACI 是"为这一代模型手工调出来的"。</strong>换到 Claude 3 Opus 也能用（10.46%），但没说这套接口对下一代模型仍最优。后来的 OpenHands 把 ACI 做成可插拔的 skills 库（第 03 篇），等于承认"没有一套通用 ACI"——这既是它的贡献（提出了问题），也是它的边界（只给了一个解）。</p>
+
+  <p><strong>三、它把"人怎么用工具"当成了唯一参照。</strong>人用 IDE 时有视觉、有并行工作记忆、有多年习惯；模型只有一条文本流。100 行窗口这类设计其实是"文本流"约束的产物，不是"模型认知"的规律。将来模型若能直接看 diff 图或调符号索引，参数都要重来。</p>
+</section>
+
+<!-- ============ 7 与本课题 ============ -->
+<section id="s7">
+  <h2><span class="n">07</span>与本课题的关系</h2>
+
+  <div class="callout relate">
+    <span class="tag">怎么用</span>
+    <p>开题报告「二、2（四）关键设计」里"编辑动作与 hunk 不同构"那一段（Claude Code 的 Edit 是旧串→新串，Codex 是补丁）可以直接引本篇：SWE-agent 是第三种形态"行号区间替换 + 结束标记"，还要靠 linter 兜底（原文 p.4）。三个 agent 三种编辑动作，就是"归一化六步"必要性的最直接证据。</p>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h4>可借鉴</h4><p><strong>一条工具调用的最小字段集。</strong>研究内容（1）的 <span class="term">ToolCall</span> 可照它的三元组定：thought（为什么做）、command + 参数（做了什么）、observation（看到什么）。再补两个字段：是否被守卫拒绝、错误文本——最能解释"这次为什么改错"。</p></div>
+    <div class="card"><h4>要小心</h4><p><strong>观察要存两份。</strong>它的观察是<em>被截断、压缩</em>后的文本（50 条上限、100 行窗口、旧观察压成一行）。若只存模型看到的最终文本，就还原不出"它当时看到了什么、漏掉了什么"；本课题应同时存原始输出与压缩后文本。</p></div>
+    <div class="card"><h4>不能支撑</h4><p><strong>它不知道"为什么开始做这件事"。</strong>轨迹里只有模型自己的 thought，没有开发者意图、没有任务边界、没有跨会话。所以它撑不起"触发来源"与"任务视角"，只能支撑"实施过程"这一段证据链。</p></div>
+  </div>
+
+  <p><strong>对应到哪个模块。</strong>研究内容（2）可借鉴它"每步一动作 + 显式 thought"的约定作为轨迹解析目标；研究内容（3）"实施过程"一节几乎可照搬它的轨迹结构。反过来，它把轨迹存在日志里给人看，我们把轨迹挂到任务上给人查。</p>
+</section>
+
+<!-- ============ 8 金句 ============ -->
+<section id="s8">
+  <h2><span class="n">08</span>原文金句</h2>
+
+  <blockquote>
+    <p>We posit that LM agents represent a new category of end users with their own needs and abilities, and would benefit from specially-built interfaces to the software they use.</p>
+    <p>我们认为语言模型智能体代表了一类新的终端用户，它们有自己的需求与能力，值得为它们专门构建软件界面。</p>
+    <span class="src">— 原文 p.1</span>
+  </blockquote>
+
+  <blockquote>
+    <p>Humans can flexibly ignore unnecessary information, whereas all content has a fixed cost in memory and computation for LMs and distracting context can harm performance.</p>
+    <p>人能灵活忽略无关信息，而对语言模型来说所有内容都有固定的记忆与计算成本，干扰性的上下文会损害性能。</p>
+    <span class="src">— 原文 p.3</span>
+  </blockquote>
+
+  <blockquote>
+    <p>When given a large number of search results, agents tend to look through every match exhaustively, calling next until each result has been inspected.</p>
+    <p>当搜索结果很多时，智能体倾向于把每一条都翻一遍，反复调用 next 直到所有结果都被检查过。</p>
+    <span class="src">— 原文 p.7</span>
+  </blockquote>
+</section>
+
+<!-- ============ 9 术语 ============ -->
+<section id="s9">
+  <h2><span class="n">09</span>术语表</h2>
+  <dl class="glossary">
+    <dt>智能体—计算机接口 <span class="term">ACI</span></dt>
+    <dd>模型与执行环境之间的全部交互契约：能发什么命令、参数怎么给、环境怎么回话。它不等于 API，也不等于提示词。</dd>
+    <dt>观察 <span class="term">observation</span></dt>
+    <dd>环境对一次动作的回应。这里观察被刻意截断与压缩，是 ACI 设计的一部分。</dd>
+    <dt>linter 守卫 <span class="term">guardrail</span></dt>
+    <dd>编辑后自动检查语法；出错则拒绝这次编辑并回显错误。作用是把级联错误截断在当步。</dd>
+    <dt>上下文压缩</dt>
+    <dd>把较早的观察替换成一行摘要。本课题采集时必须保留压缩前的原文。</dd>
+    <dt>% Resolved</dt>
+    <dd>SWE-bench 的判分口径，全部 FAIL_TO_PASS 与 PASS_TO_PASS 通过才算解决（见第 01 篇）。</dd>
+  </dl>
+</section>
+
+<!-- ============ 10 追问 ============ -->
+<section id="s10">
+  <h2><span class="n">10</span>带着问题重读</h2>
+  <div class="qa">
+    <details><summary>为什么"迭代式搜索"反而比"完全不搜索"更差？</summary><p>因为界面定义了策略空间：逐条翻的界面让"穷举"成为最省力的动作；不给搜索时，模型只能靠文件名猜路径，反而更快撞对。原文 p.7 图 5 并排画了三种界面。对本课题的启示：采集端看到的行为很多是界面塑造的，不能直接当成模型能力。</p></details>
+    <details><summary>如果给 ACI 加一个"为什么这么做"的字段，会破坏简洁性原则吗？</summary><p>不会，它已经这么做了——每步先写 thought 再给 command（原文 p.4）。破坏简洁性的是"把历史全保留"，不是"每步多写一句理由"。那句理由正是溯源要用的，而它本来就是接口的一部分。</p></details>
+    <details><summary>它和 OpenHands 的 skills 库是什么关系？</summary><p>SWE-agent 证明"接口值得设计"，OpenHands 把这件事工程化：把接口拆成可插拔的 skills，并给出"什么才配进库"的两条标准（第 03 篇）。</p></details>
+  </div>
+</section>
+
+</main>
+
+<div class="wrap">
+  <div class="pager">
+    <a href="01-swe-bench.html"><span class="dir">← 上一篇</span>SWE-bench</a>
+    <a href="03-openhands.html" style="text-align:right"><span class="dir">下一篇 →</span>OpenHands</a>
+  </div>
+</div>
+
+<footer>
+  《不是模型变强了，是操作台变顺手了：SWE-agent 与"智能体—计算机接口"》精读笔记 · 基于 NeurIPS 2024 原文逐页整理<br>
+  引用页码对应 PDF 物理页码 · 回到 <a href="index.html">文献精读总览</a>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){
+    var h=document.documentElement;
+    var p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(p||0)+'%';
+  }
+  addEventListener('scroll',onScroll,{passive:true});onScroll();
+
+  var links=[].slice.call(document.querySelectorAll('.toc a'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  if('IntersectionObserver' in window){
+    var io=new IntersectionObserver(function(es){
+      es.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(l){l.classList.remove('on');});
+          var i=secs.indexOf(e.target);
+          if(i>=0)links[i].classList.add('on');
+        }
+      });
+    },{rootMargin:'-45% 0px -50% 0px'});
+    secs.forEach(function(s){if(s)io.observe(s);});
+  }
+
+  var btn=document.getElementById('theme');
+  if(localStorage.getItem('pn-theme')==='dark')document.body.classList.add('dark');
+  btn.addEventListener('click',function(){
+    var d=document.body.classList.toggle('dark');
+    localStorage.setItem('pn-theme',d?'dark':'light');
+  });
+})();
+</script>
+</body>
+</html>
