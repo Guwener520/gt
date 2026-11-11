@@ -15,6 +15,8 @@
     python scripts/tex2md.py taskbook --check
 
 约定：
+* 本脚本由作者决定何时运行；智能体（AI 助手）调用前须先征得作者同意，
+  包括 --check 校验（见 AGENTS.md 第 7 节）。
 * tex 是排版权威；md 是逐段对应的可编辑镜像。改稿时先改 md，再同步 tex；
   tex 有改动后重新运行本脚本生成 md。提交前用 --check 确认两者一致。
 * 封面信息取自 latex/chapters/metadata.tex，不在正文 tex 中，故单独生成“封面信息”表。

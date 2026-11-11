@@ -48,13 +48,15 @@
 
 #### （二）变更与任务上下文的组织单位与粒度
 
-变更记录的单位经历了由粗到细的推进。基于提交的缺陷回溯方法借助 diff 注释与行级历史追踪，将“修复”与“引入”关联至提交及其代码行[8]，使变更与致因之间形成可计算的对应关系。然而，提交是版本控制的单位，而非开发者意图的单位；单次提交可能混杂多重意图，触发该提交的指令也不在记录范围之内。在仓库挖掘综述[9]中，研究者进一步给出表示单位的分布。多数研究以文件或行号为表示单位，以提交与缺陷库为信息来源，而修改记录与缺陷报告之间得以建立关联的比例较低。这可能表明，粒度与信息源共同限定了可关联性的上限，单位越粗，可绑定的证据越少；单位越细，对稳定位置标识的依赖越强。代码—仓库关联图方法进一步把代码实体与提交、缺陷、邮件相互索引形成网状结构[10]，使代码与记录的相关性可以进行静态的历史索引查询，关联对象以提交与仓库实体为主，变更的触发来源与验证依据不在表示范围内。
+变更记录的单位经历了由粗到细的推进。基于提交的缺陷回溯方法借助 diff 注释与行级历史追踪，将“修复”与“引入”关联至提交及其代码行[5]，使变更与致因之间形成可计算的对应关系。然而，提交是版本控制的单位，而非开发者意图的单位；单次提交可能混杂多重意图，触发该提交的指令也不在记录范围之内。在仓库挖掘综述[6]中，研究者进一步给出表示单位的分布。多数研究以文件或行号为表示单位，以提交与缺陷库为信息来源，而修改记录与缺陷报告之间得以建立关联的比例较低。这可能表明，粒度与信息源共同限定了可关联性的上限，单位越粗，可绑定的证据越少；单位越细，对稳定位置标识的依赖越强。代码—仓库关联图方法进一步把代码实体与提交、缺陷、邮件相互索引形成网状结构[7]，使代码与记录的相关性可以进行静态的历史索引查询，关联对象以提交与仓库实体为主，变更的触发来源与验证依据不在表示范围内。
 
-任务上下文的单位问题也见于中断恢复研究。Parnin 与 Rugaber 将任务上下文视为恢复工作的核心对象，其对相关工具的评述指出，按任务过滤代码元素的工具有助于找回任务所需的对象，但往往不能支持规划后续步骤或评估已完成进度[11]。该研究以空闲时长切分会话，据此指出会话与任务并非一一对应，任务边界须另行界定；研究同时发现，多数会话在首次编辑之前需先导航至其他位置，而源代码差异因能显示已完成部分并支撑进度判断，被视为有效的恢复线索[11]。此外，上述工作共同隐含一个前提，即变更由开发者直接实施，其触发来源可从提交信息、编辑操作或任务清单中就近获取，而在智能体参与开发的情境下，变更的实施主体由开发者转为智能体，使触发来源与验证依据进一步脱离版本库与 IDE 的可及范围。
+任务上下文的单位问题也见于中断恢复研究。Parnin 与 Rugaber 将任务上下文视为恢复工作的核心对象，其对相关工具的评述指出，按任务过滤代码元素的工具有助于找回任务所需的对象，但往往不能支持规划后续步骤或评估已完成进度[8]。该研究以空闲时长切分会话，据此指出会话与任务并非一一对应，任务边界须另行界定；研究同时发现，多数会话在首次编辑之前需先导航至其他位置，而源代码差异因能显示已完成部分并支撑进度判断，被视为有效的恢复线索[8]。此外，上述工作共同隐含一个前提，即变更由开发者直接实施，其触发来源可从提交信息、编辑操作或任务清单中就近获取，而在智能体参与开发的情境下，变更的实施主体由开发者转为智能体，使触发来源与验证依据进一步脱离版本库与 IDE 的可及范围。
 
 #### （三）过程溯源与工具现状：证据链的三处缺口
 
-对任务的过程溯源除了依托记录外，还需要记录带有显式的派生关系。W3C 的 PROV-O 是为这一问题设计的通用语法，它把过程拆为实体（Entity）、活动（Activity）与代理（Agent），以“活动使用实体、活动产出实体、实体归属代理”刻画三者关系[12]。该方法的抽象层次比较高，为本课题提供了一个比较基础的方法参考。Souza 等的 PROV-AGENT 在 PROV 的基础上扩展，新增智能体、工具调用与模型调用等类，把提示、响应、决策和数据对象纳入同一张图，并用 used、wasGeneratedBy、wasInformedBy 等关系连接[13]。其一次决策可以一路回溯到最初的输入数据，因此在智能体交互方面相比PROV-O更细化。脚本执行溯源工具则以内容寻址标识和一次执行（trial）为单位，支持差异比较、状态恢复与历史查询[14]。这些工作表明过程可以被记录与查询，但其对象是数据、脚本状态或交互元数据，尚未与代码变更块建立派生关系。工程工具一侧，有的客户端以会话为单位保存历史并提供恢复入口[15]，但未提供与变更、测试绑定的证据链。由此可归纳出三处缺口：组织单位上，缺少“由开发者提出、可跨会话延续”的任务层；变更粒度上，文件或行均未达到可与证据绑定的变更块级；验证依据上，测试主要作为评测判据，未进入“某次修改依据哪次测试”的可查询表示。本课题即以这三点为切入点：以任务为根、以变更块为粒度、把测试运行纳入证据链。
+对代码变更以任务为基础的溯源除了依托过程记录外，还需要该记录带有显式的派生关系，从而实现有证据链的溯源。W3C 的 PROV-O 是为这一问题设计的通用语法，它把过程拆为实体（Entity）、活动（Activity）与代理（Agent），以“活动使用实体、活动产出实体、实体归属代理”刻画三者关系[9]。该方法的抽象层次比较高，为本课题提供了一个比较基础的方法参考。Souza 等的 PROV-AGENT 在 PROV 的基础上扩展，新增智能体、工具调用与模型调用等类，把提示、响应、决策和数据对象纳入同一张图，并用 used、wasGeneratedBy、wasInformedBy 等关系连接[10]。其一次决策可以一路回溯到最初的输入数据，因此在智能体交互方面相比PROV-O更细化。Pimentel 等的 noWorkflow 把执行轨迹与对象之间的产生关系合为一体，以文件内容计算标识，内容变更则标识随之改变，并以一次运行为单位整体保存[11]，因而既能复现单次运行，也能对文件版本的具体执行环节进行记录。对于上述研究，均提出了对开发工作流程轨迹及其影响做出记录的方法，但均为能达到以代码变更为起点、智能体任务为终点的溯源。
+
+根据对以上论文的研究，本课题据此确定工作方向：按任务组织智能体工作记录，并将对话、工具调用与测试结果与代码改动绑定，从代码改动出发对其对应任务与其改动过程溯源，并在任务中断时能够据此进行快速复原。
 
 ## 二、毕业设计（论文）方案介绍
 
@@ -72,13 +74,13 @@
 
 #### （一）概念框架与信息模型
 
-本模块界定开发任务、任务上下文与变更溯源三个核心概念，并提出可计算的信息模型。开发任务指开发者发起的一次有明确目标的开发工作单元；任务上下文指与该任务相关的对话、变更、执行、测试、决策与未完成事项的集合；变更溯源指从一段代码变更出发，追溯其触发来源、实施过程、验证依据与后续演化的证据链。在此基础上，将任务上下文刻画为以任务为根的有向异构图：节点包括任务、对话轮次、消息、工具调用、文件变更（含变更块）、测试运行、测试用例结果与检查点，边包括包含、触发、产出、验证、演化与快照等关系，其基本结构如图 2-2 所示。以任务为根而非以会话或文件为根，是为了让跨会话、跨文件的记录围绕同一目标聚合，并为后续的边界判定与证据查询提供统一入口。该模型与 PROV-O[12] 的基本思想一致，但针对智能体事件流增加了任务边界、变更块与验证依据等约束。事件采用统一的 JSON 结构表示，字段涵盖标识、类型、时间、主体、来源、载荷与关联；模型需满足变更标识稳定、消息与变更多对多、测试结果双向指向等基本约束。上述概念与模型为后续采集、关联与查询提供共同语言，其具体表结构与索引方式将在原型实现阶段细化。
+本模块界定开发任务、任务上下文与变更溯源三个核心概念，并提出可计算的信息模型。开发任务指开发者发起的一次有明确目标的开发工作单元；任务上下文指与该任务相关的对话、变更、执行、测试、决策与未完成事项的集合；变更溯源指从一段代码变更出发，追溯其触发来源、实施过程、验证依据与后续演化的证据链。在此基础上，将任务上下文刻画为以任务为根的有向异构图：节点包括任务、对话轮次、消息、工具调用、文件变更（含变更块）、测试运行、测试用例结果与检查点，边包括包含、触发、产出、验证、演化与快照等关系，其基本结构如图 2-2 所示。以任务为根而非以会话或文件为根，是为了让跨会话、跨文件的记录围绕同一目标聚合，并为后续的边界判定与证据查询提供统一入口。该模型与 PROV-O[9] 的基本思想一致，但针对智能体事件流增加了任务边界、变更块与验证依据等约束。事件采用统一的 JSON 结构表示，字段涵盖标识、类型、时间、主体、来源、载荷与关联；模型需满足变更标识稳定、消息与变更多对多、测试结果双向指向等基本约束。上述概念与模型为后续采集、关联与查询提供共同语言，其具体表结构与索引方式将在原型实现阶段细化。
 
 ![图 2-2 任务上下文的信息模型](figures/fig2-model.png)
 
 #### （二）上下文采集、关联与任务边界
 
-本模块研究如何从真实开发过程中获得上述实体，并建立它们之间的关联。采集对象包括代码智能体的会话与工具调用、文件系统与 Git 变更、测试运行与结果；接入方式以 Claude Code 的官方钩子与 stream-json 为主，本地日志与 Git 作为补充。由于不同工具的编辑动作形式不一，需要将“旧串→新串”、补丁、整文件写入等统一归一化为变更块；语法感知的符号定位可借助 tree-sitter[16] 一类解析器完成。关联层面，拟综合利用时间邻近、显式引用（路径、符号、行号、命令、测试名）与文件级位置映射三类线索，为每条消息与每个变更块计算关联强度。由于同一变更可能由多轮消息共同促成，关联结果保留置信度与多对多关系，而不强行归并为单一来源。任务边界判定则依据空闲时长、显式指令、目标切换与提交动作等特征，采用可解释的规则打分，以便向开发者说明判定依据。该模块的重点不在于追求单点最优，而在于形成一套可复现、可解释的关联流程，其参数与阈值将在小规模验证集上调整并报告敏感性。
+本模块研究如何从真实开发过程中获得上述实体，并建立它们之间的关联。采集对象包括代码智能体的会话与工具调用、文件系统与 Git 变更、测试运行与结果；接入方式以 Claude Code 的官方钩子与 stream-json 为主，本地日志与 Git 作为补充。由于不同工具的编辑动作形式不一，需要将“旧串→新串”、补丁、整文件写入等统一归一化为变更块；语法感知的符号定位可借助 tree-sitter[12] 一类解析器完成。关联层面，拟综合利用时间邻近、显式引用（路径、符号、行号、命令、测试名）与文件级位置映射三类线索，为每条消息与每个变更块计算关联强度。由于同一变更可能由多轮消息共同促成，关联结果保留置信度与多对多关系，而不强行归并为单一来源。任务边界判定则依据空闲时长、显式指令、目标切换与提交动作等特征，采用可解释的规则打分，以便向开发者说明判定依据。该模块的重点不在于追求单点最优，而在于形成一套可复现、可解释的关联流程，其参数与阈值将在小规模验证集上调整并报告敏感性。
 
 #### （三）变更溯源与任务续接
 
@@ -86,7 +88,7 @@
 
 #### （四）评估方案
 
-本模块检验前三个模块的构想是否可行。研究定位为小样本探索性预研，不追求确证性结论。离线评测拟在 2 个中小规模开源仓库的 6—8 个任务上进行，任务覆盖缺陷修复、功能新增与代码重构，其中部分可改写自 SWE-bench 与 SWE-rebench[17] 的真实 issue；考察关联准确率、任务边界判定 F1、溯源查询正确率与查询响应时间等指标。用户研究拟招募 4—5 名具备编程经验的同专业学生，在自我中断情境下比较“Git 日志 + 原始会话记录”与“完整系统”两种条件，观察恢复用时、理解要点命中数与问题定位用时，并以 SUS[18] 作为可用性指标，NASA-TLX[19] 作为可选的认知负荷观察。受样本量限制，结果以描述统计与逐人差值呈现，不设显著性结论；同时通过任务构造与评测分离、第三方招募、数据脱敏等方式控制实验者偏差与伦理风险。离线指标用于检验方法的客观正确性，用户研究用于观察其在真实恢复情境中的可用性，二者互为补充。
+本模块检验前三个模块的构想是否可行。研究定位为小样本探索性预研，不追求确证性结论。离线评测拟在 2 个中小规模开源仓库的 6—8 个任务上进行，任务覆盖缺陷修复、功能新增与代码重构，其中部分可改写自 SWE-bench 与 SWE-rebench[13] 的真实 issue；考察关联准确率、任务边界判定 F1、溯源查询正确率与查询响应时间等指标。用户研究拟招募 4—5 名具备编程经验的同专业学生，在自我中断情境下比较“Git 日志 + 原始会话记录”与“完整系统”两种条件，观察恢复用时、理解要点命中数与问题定位用时，并以 SUS[14] 作为可用性指标，NASA-TLX[15] 作为可选的认知负荷观察。受样本量限制，结果以描述统计与逐人差值呈现，不设显著性结论；同时通过任务构造与评测分离、第三方招募、数据脱敏等方式控制实验者偏差与伦理风险。离线指标用于检验方法的客观正确性，用户研究用于观察其在真实恢复情境中的可用性，二者互为补充。
 
 四个模块的推进顺序为：先完成概念与模型、采集与关联的方法设计，再实现溯源与续接原型，最后开展评估，并将评估结果反馈至模型与方法。各模块的阶段性产出作为下一模块的输入，具体任务与周次见下文进度安排。
 
@@ -121,37 +123,29 @@
 
 [3] WANG X, LI B, SONG Y, et al. OpenHands: an open platform for AI software developers as generalist agents[C]//Proceedings of the 13th International Conference on Learning Representations. 2025. arXiv: 2407.16741.
 
-[4] 张犬俊, 谢杨, 房春荣, 等. 检索增强生成在软件工程中的应用综述[J]. 软件学报, 2026, 37(3): 1316-1339. DOI: 10.13328/j.cnki.jos.007567.
+[4] MOZANNAR H, BANSAL G, FOURNEY A, et al. Reading between the lines: modeling user behavior and costs in AI-assisted programming[C]//Proceedings of the CHI Conference on Human Factors in Computing Systems. 2024: 1-16. DOI: 10.1145/3613904.3641936.
 
-[5] 汪莹, 字千成, 彭鑫, 等. 基于大语言模型的故障复现测试用例生成方法[J]. 软件学报, 2026, 37(4): 1690-1714. DOI: 10.13328/j.cnki.jos.007474.
+[5] ŚLIWERSKI J, ZIMMERMANN T, ZELLER A. When do changes induce fixes?[C]//Proceedings of the 2005 International Workshop on Mining Software Repositories. 2005: 1-5. DOI: 10.1145/1083142.1083147.
 
-[6] MOZANNAR H, BANSAL G, FOURNEY A, et al. Reading between the lines: modeling user behavior and costs in AI-assisted programming[C]//Proceedings of the CHI Conference on Human Factors in Computing Systems. 2024: 1-16. DOI: 10.1145/3613904.3641936.
+[6] KAGDI H, COLLARD M L, MALETIC J I. A survey and taxonomy of approaches for mining software repositories in the context of software evolution[J]. Journal of Software Maintenance and Evolution: Research and Practice, 2007, 19(2): 77-131. DOI: 10.1002/smr.344.
 
-[7] PERRY N, SRIVASTAVA M, KUMAR D, et al. Do users write more insecure code with AI assistants?[C]//Proceedings of the 2023 ACM SIGSAC Conference on Computer and Communications Security. 2023: 2785-2799. DOI: 10.1145/3576915.3623157.
+[7] BEGEL A, KHOO Y P, ZIMMERMANN T. Codebook: discovering and exploiting relationships in software repositories[C]//Proceedings of the 32nd ACM/IEEE International Conference on Software Engineering. 2010: 125-134. DOI: 10.1145/1806799.1806821.
 
-[8] ŚLIWERSKI J, ZIMMERMANN T, ZELLER A. When do changes induce fixes?[C]//Proceedings of the 2005 International Workshop on Mining Software Repositories. 2005: 1-5. DOI: 10.1145/1083142.1083147.
+[8] PARNIN C, RUGABER S. Resumption strategies for interrupted programming tasks[J]. Software Quality Journal, 2011, 19(1): 5-34. DOI: 10.1007/s11219-010-9104-9.
 
-[9] KAGDI H, COLLARD M L, MALETIC J I. A survey and taxonomy of approaches for mining software repositories in the context of software evolution[J]. Journal of Software Maintenance and Evolution: Research and Practice, 2007, 19(2): 77-131. DOI: 10.1002/smr.344.
+[9] W3C. PROV-O: the PROV ontology[EB/OL]. (2013-04-30)[2026-10-27]. https://www.w3.org/TR/prov-o/.
 
-[10] BEGEL A, KHOO Y P, ZIMMERMANN T. Codebook: discovering and exploiting relationships in software repositories[C]//Proceedings of the 32nd ACM/IEEE International Conference on Software Engineering. 2010: 125-134. DOI: 10.1145/1806799.1806821.
+[10] SOUZA R, GUEROUDJI A, DEWITT S, et al. PROV-AGENT: unified provenance for tracking AI agent interactions in agentic workflows[C]//Proceedings of the 21st IEEE International Conference on e-Science. 2025. arXiv: 2508.02866.
 
-[11] PARNIN C, RUGABER S. Resumption strategies for interrupted programming tasks[J]. Software Quality Journal, 2011, 19(1): 5-34. DOI: 10.1007/s11219-010-9104-9.
+[11] PIMENTEL J F, MURTA L, BRAGANHOLO V, et al. noWorkflow: a tool for collecting, analyzing, and managing provenance from Python scripts[J]. Proceedings of the VLDB Endowment, 2017, 10(12): 1841-1844. DOI: 10.14778/3137765.3137789.
 
-[12] W3C. PROV-O: the PROV ontology[EB/OL]. (2013-04-30)[2026-10-27]. https://www.w3.org/TR/prov-o/.
+[12] Tree-sitter. Tree-sitter documentation[EB/OL]. [2026-10-27]. https://tree-sitter.github.io/tree-sitter/.
 
-[13] SOUZA R, GUEROUDJI A, DEWITT S, et al. PROV-AGENT: unified provenance for tracking AI agent interactions in agentic workflows[C]//Proceedings of the 21st IEEE International Conference on e-Science. 2025. arXiv: 2508.02866.
+[13] BADERDINOV I, GOLUBEV A, NEKRASHEVICH M, et al. SWE-rebench: an automated pipeline for task collection and decontaminated evaluation of software engineering agents[EB/OL]. (2025-05-26)[2026-10-27]. https://arxiv.org/abs/2505.20411.
 
-[14] PIMENTEL J F, MURTA L, BRAGANHOLO V, et al. noWorkflow: a tool for collecting, analyzing, and managing provenance from Python scripts[J]. Proceedings of the VLDB Endowment, 2017, 10(12): 1841-1844. DOI: 10.14778/3137765.3137789.
+[14] BROOKE J. SUS: a quick and dirty usability scale[M]//JORDAN P W, THOMAS B, WEERDMEESTER B A, et al. Usability Evaluation in Industry. London: Taylor & Francis, 1996: 189-194.
 
-[15] Anthropic. Claude Code documentation: overview[EB/OL]. [2026-10-27]. https://code.claude.com/docs/en/overview.
-
-[16] Tree-sitter. Tree-sitter documentation[EB/OL]. [2026-10-27]. https://tree-sitter.github.io/tree-sitter/.
-
-[17] BADERDINOV I, GOLUBEV A, NEKRASHEVICH M, et al. SWE-rebench: an automated pipeline for task collection and decontaminated evaluation of software engineering agents[EB/OL]. (2025-05-26)[2026-10-27]. https://arxiv.org/abs/2505.20411.
-
-[18] BROOKE J. SUS: a quick and dirty usability scale[M]//JORDAN P W, THOMAS B, WEERDMEESTER B A, et al. Usability Evaluation in Industry. London: Taylor & Francis, 1996: 189-194.
-
-[19] HART S G, STAVELAND L E. Development of NASA-TLX (Task Load Index): results of empirical and theoretical research[J]. Advances in Psychology, 1988, 52: 139-183. DOI: 10.1016/S0166-4115(08)62386-9.
+[15] HART S G, STAVELAND L E. Development of NASA-TLX (Task Load Index): results of empirical and theoretical research[J]. Advances in Psychology, 1988, 52: 139-183. DOI: 10.1016/S0166-4115(08)62386-9.
 
 <!-- pagebreak -->
 

@@ -89,6 +89,7 @@
 
 ```powershell
 # 在工作区根目录：先确认 Markdown 镜像与 tex 同步
+# 注意：本脚本（含 --check）由作者决定何时运行；若由智能体执行，须先经作者同意（见 AGENTS.md 第 7 节）
 python scripts/tex2md.py --check
 
 cd latex
