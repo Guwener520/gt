@@ -4,9 +4,10 @@
 __pycache__/
 *.pyc
 
-# ---- 文献原文 PDF（约 37 MB，可由 refs/tools/ 重新下载）----
-# 下载记录见 refs/download-results.json 与 refs/参考文献原文获取清单-20261027.md
+# ---- 文献原文（PDF 与网页快照，只留本地）----
+# 清单见 docs/参考文献清单-20261109.md
 refs/pdfs/*.pdf
+refs/pdfs/*.html
 
 # ---- LaTeX 中间产物（latex/ 下，可随时重建；PDF 由 deliverables/ 归档）----
 latex/**/*.aux

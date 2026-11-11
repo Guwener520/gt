@@ -21,7 +21,7 @@ DELIVERABLES = ROOT / "deliverables"
 # 入口文件 -> 归档文件名
 TARGETS = {
     "taskbook": "毕业设计任务书-latex-v6-20261103.pdf",
-    "proposal": "毕业设计开题报告-latex-v6-20261104.pdf",
+    "proposal": "毕业设计开题报告-latex-v9-20261109.pdf",
 }
 
 LATEXMK_ARGS = [

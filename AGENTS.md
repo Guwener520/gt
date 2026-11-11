@@ -82,7 +82,7 @@
 3. **引用**：正文引用与文末文献表一一对应；引用在线文档须注明 URL 与访问日期。
 4. **图表**：图题在下、表题在上，编号连续（图 3-1、表 3-1）；图必须可读，避免截图糊字。
 5. **数据**：所有实验数字须来自 `experiments/` 下的可复现脚本输出，不得手填估计值。
-6. **篇幅**：任务书 3–7 页（含文献表；学院若限 2 页，压缩"二、课题背景与意义"第 3 段与"四、基本要求"即可）；开题报告 5000–7000 字。**口径**：正文汉字（不含英文文献），段落与表格一并计入；实测取 PDF 文本提取的汉字数，并扣除末页"审核意见"模板文字。**实测**：v6 稿（2026-11-04，重写"一、2 文献综述"为五条脉络先述后评＋表 1-1 横向对照＋三处空缺述评）**6892 字、15 页**，含 3 图 2 表 44 篇文献，在 5000—7000 字范围内。v5 稿（2026-11-03，二改为四模块初步方案并压缩）5289 字、13 页、3 图 1 表，为历史版本。文献综述重写说明见 `docs/开题报告-v6修订说明.md`，独立评审见 `docs/litreview-review-20261104.md`，逐条事实底稿见 `docs/litreview-evidence-20261104.md`；v4 稿（8708 字、18 页、3 表）为历史版本。毕业论文 1.5–2 万字。
+6. **篇幅**：任务书 3–7 页（含文献表；学院若限 2 页，压缩"二、课题背景与意义"第 3 段与"四、基本要求"即可）；开题报告 5000–7000 字。**口径**：正文汉字（不含英文文献），段落与表格一并计入；实测取 PDF 文本提取的汉字数，并扣除末页"审核意见"模板文字。**实测**：v9 稿（2026-11-09，按"只综述本地有保存的文献"删去未获全文的 GumTree 与 Mylyn 两条，综述保留 15 条、全文 19 条）**5440 字、11 页**，含 3 图 1 表 19 篇文献，在 5000—7000 字范围内。v8 稿（2026-11-08，将"一、2 文献综述"压到三页以内，三条脉络，文献 28→21，删除表 1-1）5324 字、12 页、3 图 1 表、21 篇文献，为历史版本；v7 稿（2026-11-08，文献 44→28，五条脉络重写）6971 字、14 页、3 图 2 表、28 篇文献，为历史版本；v6 稿（2026-11-04，五条脉络先述后评＋表 1-1 横向对照＋三处空缺述评）6892 字、15 页、44 篇文献，亦为历史版本；v5 稿（2026-11-03，二改为四模块初步方案并压缩）5289 字、13 页、3 图 1 表，亦为历史版本。文献综述修订说明见 `docs/开题报告-v9修订说明.md`、`docs/开题报告-v8修订说明.md`；v7 精简说明、v6 重写说明与独立评审见 `docs/开题报告-v7修订说明.md`、`docs/开题报告-v6修订说明.md`、`docs/litreview-review-20261104.md`，逐条事实底稿见 `docs/litreview-evidence-20261104.md`；v4 稿（8708 字、18 页、3 表）为历史版本。毕业论文 1.5–2 万字。
 7. **语气**：任务书使用「要求学生……」「完成……」「实现……」的规范性表述，避免口语化与主观夸张（如「极大地」「完美地」）。
 8. **Markdown 镜像**：每份 LaTeX 文档（任务书、开题报告、后续论文正文）必须同步一份可编辑的 Markdown 镜像，两者逐段对应；改稿只改一边、不同步另一边视为未完成。规则与映射见第 7 节。
 
@@ -96,6 +96,7 @@ thesis/
   topic.md                 # 选题原文 + 结构化拆解（与 AGENTS.md 同步）
   task-book.md             # 任务书 LaTeX 版的可编辑 Markdown 镜像（对应 latex/chapters/taskbook_body.tex）
   proposal.md              # 开题报告 LaTeX 版的可编辑 Markdown 镜像（对应 latex/chapters/proposal_body.tex）
+  thesis.md                # 毕业论文正文镜像（待建立；对应 latex/main.tex 或分章）
   archive/                 # 旧稿归档（历史内容稿与旧版本）
   figures/                 # 开题报告插图（由 scripts/make_figures.py 生成）
 latex/                     # TongjiThesis v1.5.1 排版工程（任务书/开题报告，后续论文正文）
@@ -108,13 +109,16 @@ latex/                     # TongjiThesis v1.5.1 排版工程（任务书/开题
 deliverables/              # 交付给学院/导师的成品（最小集：latex 源 + pdf + markdown 镜像）
   *.pdf                    # 由 latex/ 编译；docx/pptx 仅在学院或导师明确要求时生成
   archive/                 # 被取代的旧版成品
+.dsh-graduation-deliverables.json  # 成果条插件的工作区标记（勿删/改名）
 docs/                      # 调研笔记、设计文档、评审意见记录
 experiments/               # 评估脚本、样例任务、结果数据
 src/                       # 原型系统源码（后续建立）
 scripts/                   # 构建与校验脚本（tex2md.py 负责 Markdown 镜像的生成与校验）
 ```
 
-文件命名：中文名 + 日期版本，例如 `毕业设计任务书-v6-20261103.pdf`；不要用空格。
+> 插件源码位于 Code 工作区：`C:\Users\guwen\Documents\deepseek-harness\Code\plugins\dsh-graduation-deliverables`。本工作区只保留 `.dsh-graduation-deliverables.json` 标记；插件通过 desktop profile 的 link 安装，不依赖本目录。
+
+文件命名：中文名 + 日期版本，例如 `毕业设计任务书-latex-v6-20261103.pdf`；不要用空格。成果文件的完整约定见第 9 节。
 
 ---
 
@@ -154,3 +158,30 @@ scripts/                   # 构建与校验脚本（tex2md.py 负责 Markdown �
 | 29—32 | 论文审阅与修改 | 论文定稿、答辩材料 |
 
 > 教学周按学院日历；第 9 周开题，中期检查与答辩按学院统一安排，具体以学院通知为准。
+
+---
+
+## 9. 成果文件命名与检索约定
+
+插件（源码位于 Code 工作区 `C:\Users\guwen\Documents\deepseek-harness\Code\plugins\dsh-graduation-deliverables`）在输入框上方显示本工作区最新的任务书、开题报告、毕业论文 PDF 文件名及其 Markdown 镜像文件名，点击用系统默认应用打开。它按以下约定检索：
+
+- **目录**：只读 `deliverables/` 顶层；历史版本放 `deliverables/archive/`，插件不读。
+- **文件名**：`<成果名>[-latex]-v<版本号>-<YYYYMMDD>.pdf`；版本号与日期均不可省。
+- **成果名**：
+  - 任务书：`毕业设计任务书`
+  - 开题报告：`毕业设计开题报告`
+  - 毕业论文：`毕业论文`（兼容 `毕业设计论文`）
+- **最新判定**：版本号降序 → 日期降序 → 带 `-latex` 优先 → 文件名字典序；每类只显示一个。
+- **格式**：只显示 `.pdf`；`.docx` 为可选备份，不进入成果面板。
+- **Markdown 镜像**：任务书 `thesis/task-book.md`、开题报告 `thesis/proposal.md`、毕业论文 `thesis/thesis.md`（待建立）；插件同时显示镜像路径，点击用默认应用打开；镜像不存在时显示「未生成」。
+- **一键排版编译**：面板底部按钮向当前对话发送请求，要求按 Markdown 修改同步 LaTeX、用 `scripts/build_latex.py` 编译、归档旧 PDF、更新 `docs/CHANGELOG.md`；按钮本身不直接执行编译。
+- **代码位置**：插件源码在 Code 工作区，不在本工作区；本工作区只保留 `.dsh-graduation-deliverables.json` 标记。
+- **安装方式**：desktop profile 以 `link:` 依赖指向 Code 工作区中的插件目录，并在 `node_modules` 下建立 junction；移动插件目录后需同步 profile 的 `package.json`、`pnpm-lock.yaml` 与 junction。
+- **工作区标记**：根目录 `.dsh-graduation-deliverables.json` 用于识别本工作区；其他工作区缺少该文件时插件显示「不适用」。不要删除/改名；如改名，同步 Code 工作区中 `client.js` 的 `MARKER` 常量。
+- **同步修改**：改名、改目录、新增成果类别或 Markdown 镜像时，必须同步本文件、Code 工作区中的插件 `README.md` 与 `client.js` 的 `CATEGORIES`/`MARKER`/`MD_FILES`。
+- **示例**：
+  ```
+  deliverables/毕业设计任务书-latex-v6-20261103.pdf
+  deliverables/毕业设计开题报告-latex-v6-20261104.pdf
+  deliverables/毕业论文-v1-20261220.pdf
+  ```

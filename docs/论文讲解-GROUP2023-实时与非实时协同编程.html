@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>论文讲解 · Integrating Real-Time and Non-Real-Time Collaborative Programming (GROUP 2023)</title>
+<style>
+  :root{
+    --ink:#1c2430;
+    --ink-2:#3d4a5a;
+    --muted:#6b7787;
+    --line:#e2e5ea;
+    --bg:#fbfaf7;
+    --card:#ffffff;
+    --accent:#0f6b6b;
+    --accent-2:#0f6b6b;
+    --accent-soft:#e6f2f1;
+    --warn:#9a5b00;
+    --warn-soft:#fdf3e2;
+    --blue:#2b5c8a;
+    --blue-soft:#eaf1f8;
+    --red:#a33a2c;
+    --red-soft:#fbeceb;
+    --a:#c2410c;      /* 协作者 A */
+    --b:#1d4ed8;      /* 协作者 B */
+    --c:#6d28d9;      /* 协作者 C */
+    --radius:14px;
+    --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
+    --mono:"Cascadia Code","JetBrains Mono",Consolas,"Courier New",monospace;
+    --sans:"Segoe UI","PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,sans-serif;
+    --serif:"Source Han Serif SC","Noto Serif SC","Songti SC",Georgia,serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:76px}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:16px;line-height:1.85;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none;border-bottom:1px solid rgba(15,107,107,.25)}
+  a:hover{border-bottom-color:var(--accent)}
+  code,kbd{font-family:var(--mono);font-size:.88em;background:#eef1f4;border:1px solid #e1e6ec;border-radius:5px;padding:.1em .35em}
+  h1,h2,h3,h4{line-height:1.35;color:var(--ink);font-weight:700}
+  h2{font-size:1.55rem;margin:0 0 .2em}
+  h3{font-size:1.15rem;margin:2em 0 .5em}
+  h4{font-size:1rem;margin:1.4em 0 .4em;color:var(--ink-2)}
+  p{margin:.7em 0}
+  ul,ol{margin:.6em 0;padding-left:1.4em}
+  li{margin:.3em 0}
+  hr{border:0;border-top:1px solid var(--line);margin:2.5em 0}
+
+  /* ---------- 顶栏 ---------- */
+  header.top{
+    position:sticky;top:0;z-index:50;
+    background:rgba(251,250,247,.9);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);
+  }
+  .top-inner{max-width:1180px;margin:0 auto;padding:.55rem 1.4rem;display:flex;align-items:center;gap:1rem}
+  .brand{font-weight:700;font-size:.92rem;letter-spacing:.02em;white-space:nowrap}
+  .brand span{color:var(--accent)}
+  nav.toc{margin-left:auto;display:flex;gap:.15rem;flex-wrap:wrap;justify-content:flex-end}
+  nav.toc a{
+    font-size:.8rem;color:var(--ink-2);border:0;padding:.25rem .5rem;border-radius:6px;white-space:nowrap;
+  }
+  nav.toc a:hover{background:var(--accent-soft);color:var(--accent)}
+
+  /* ---------- 版心 ---------- */
+  main{max-width:1180px;margin:0 auto;padding:0 1.4rem 6rem}
+  .hero{padding:3.2rem 0 1.2rem}
+  .kicker{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.1rem}
+  .tag{
+    font-size:.75rem;letter-spacing:.04em;padding:.2rem .6rem;border-radius:999px;
+    background:var(--accent-soft);color:var(--accent);border:1px solid rgba(15,107,107,.18);font-weight:600;
+  }
+  .tag.gray{background:#f0f2f5;color:var(--ink-2);border-color:#e3e7ec}
+  h1.title{
+    font-family:var(--serif);font-size:2.15rem;line-height:1.3;margin:0 0 .5rem;letter-spacing:.01em;
+  }
+  .subtitle{font-family:var(--serif);font-size:1.05rem;color:var(--muted);margin:0 0 1.4rem;line-height:1.6}
+  .authors{font-size:.9rem;color:var(--ink-2);margin:0 0 .3rem}
+  .meta{font-size:.85rem;color:var(--muted)}
+  .meta code{background:transparent;border:0;padding:0;color:var(--ink-2)}
+
+  /* ---------- 速览卡 ---------- */
+  .glance{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:2rem 0 1rem;
+  }
+  .glance div{background:var(--card);padding:1rem 1.1rem}
+  .glance dt{font-size:.72rem;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin:0 0 .25rem}
+  .glance dd{margin:0;font-weight:700;font-size:1.02rem;line-height:1.5}
+  .glance dd small{display:block;font-weight:400;font-size:.78rem;color:var(--muted);margin-top:.15rem;line-height:1.5}
+
+  .tldr{
+    background:var(--card);border:1px solid var(--line);border-left:4px solid var(--accent);
+    border-radius:var(--radius);padding:1.2rem 1.4rem;box-shadow:var(--shadow);margin:1.2rem 0 0;
+  }
+  .tldr h3{margin:0 0 .4rem;font-size:.95rem;letter-spacing:.06em;color:var(--accent);text-transform:uppercase}
+  .tldr p{margin:.4em 0}
+
+  /* ---------- 章节 ---------- */
+  section.chapter{padding-top:2.6rem;border-top:1px solid var(--line);margin-top:2.6rem}
+  .chap-no{
+    font-family:var(--mono);font-size:.78rem;color:var(--accent);letter-spacing:.12em;
+    display:block;margin-bottom:.35rem;
+  }
+  .lead{font-size:1.02rem;color:var(--ink-2)}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+    padding:1.2rem 1.4rem;box-shadow:var(--shadow);margin:1.2rem 0;
+  }
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:1.1rem}
+  @media (max-width:860px){
+    .grid-2,.grid-3{grid-template-columns:1fr}
+    .glance{grid-template-columns:repeat(2,1fr)}
+    nav.toc{display:none}
+    h1.title{font-size:1.6rem}
+  }
+
+  /* ---------- 提示块 ---------- */
+  .callout{border-radius:var(--radius);padding:1rem 1.2rem;margin:1.1rem 0;border:1px solid;font-size:.95rem}
+  .callout p:first-child{margin-top:0}.callout p:last-child{margin-bottom:0}
+  .callout .label{font-weight:700;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:.3rem}
+  .callout.insight{background:var(--accent-soft);border-color:rgba(15,107,107,.22)}
+  .callout.insight .label{color:var(--accent)}
+  .callout.warn{background:var(--warn-soft);border-color:rgba(154,91,0,.22)}
+  .callout.warn .label{color:var(--warn)}
+  .callout.note{background:var(--blue-soft);border-color:rgba(43,92,138,.2)}
+  .callout.note .label{color:var(--blue)}
+  .callout.crit{background:var(--red-soft);border-color:rgba(163,58,44,.2)}
+  .callout.crit .label{color:var(--red)}
+
+  /* ---------- 表格 ---------- */
+  .table-wrap{overflow-x:auto;margin:1.1rem 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+  table{border-collapse:collapse;width:100%;font-size:.9rem}
+  th,td{padding:.62rem .8rem;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+  thead th{background:#f5f7f9;font-size:.78rem;letter-spacing:.05em;color:var(--ink-2);font-weight:700;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover{background:#fcfcfb}
+  td.num{font-family:var(--mono);white-space:nowrap;text-align:right}
+  caption{caption-side:top;text-align:left;font-size:.78rem;color:var(--muted);padding:.6rem .8rem;border-bottom:1px solid var(--line)}
+
+  /* ---------- 代码/流程 ---------- */
+  pre{
+    background:#1e2732;color:#dbe4ee;border-radius:var(--radius);padding:1rem 1.2rem;
+    overflow-x:auto;font-family:var(--mono);font-size:.82rem;line-height:1.65;margin:1rem 0;
+  }
+  pre .cmt{color:#7f8ea3}
+  pre .k{color:#7dd3fc}
+  pre .s{color:#fcd34d}
+
+  /* ---------- 三种提交模式 ---------- */
+  .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin:1.2rem 0}
+  @media (max-width:860px){.modes{grid-template-columns:1fr}}
+  .mode{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;box-shadow:var(--shadow)}
+  .mode h4{margin:.1rem 0 .35rem;font-size:.98rem}
+  .mode .badge{font-family:var(--mono);font-size:.72rem;color:var(--accent);background:var(--accent-soft);padding:.1rem .4rem;border-radius:4px}
+  .mode p{font-size:.86rem;color:var(--ink-2);margin:.35em 0}
+  .mode .pro,.mode .con{font-size:.82rem;margin:.2em 0}
+  .mode .pro::before{content:"＋ ";color:var(--accent);font-weight:700}
+  .mode .con::before{content:"－ ";color:var(--red);font-weight:700}
+
+  /* ---------- 提交图 ---------- */
+  .commitgraph{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:1rem;margin:1.2rem 0}
+  .commitgraph svg{width:100%;height:auto;display:block}
+  .cg-cap{font-size:.78rem;color:var(--muted);margin-top:.4rem}
+
+  /* ---------- 前后对照 ---------- */
+  .compare{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1rem 0}
+  @media (max-width:860px){.compare{grid-template-columns:1fr}}
+  .filebox{background:#1e2732;border-radius:10px;overflow:hidden;font-family:var(--mono);font-size:.8rem}
+  .filebox .fname{background:#141c25;color:#9fb0c3;padding:.35rem .8rem;font-size:.75rem;letter-spacing:.04em}
+  .filebox .lines{padding:.5rem 0;color:#d7e1ec}
+  .filebox .ln{display:flex;gap:.7rem;padding:.05rem .8rem;white-space:pre}
+  .filebox .ln .no{color:#5b6b7d;min-width:1.4em;text-align:right;user-select:none}
+  .filebox .ln.add{background:rgba(34,197,94,.12);box-shadow:inset 3px 0 0 #22c55e}
+  .filebox .ln.del{background:rgba(239,68,68,.12);box-shadow:inset 3px 0 0 #ef4444}
+  .filebox .ln .who{font-size:.68rem;padding:0 .3rem;border-radius:3px;align-self:center;margin-left:auto;color:#0b1220;font-weight:700}
+
+  .ops{display:flex;flex-direction:column;gap:.45rem;margin:.9rem 0}
+  .op{display:flex;align-items:flex-start;gap:.6rem;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.5rem .7rem;font-size:.84rem}
+  .op .dot{width:10px;height:10px;border-radius:50%;margin-top:.45rem;flex:none}
+  .op .tagx{font-family:var(--mono);font-size:.72rem;padding:.05rem .35rem;border-radius:4px;background:#eef1f4;color:var(--ink-2)}
+  .op code{background:transparent;border:0;padding:0}
+
+  /* ---------- 步骤条 ---------- */
+  .steps{counter-reset:s;list-style:none;padding:0;margin:1.2rem 0}
+  .steps li{
+    position:relative;padding:.7rem 0 .7rem 2.8rem;border-bottom:1px dashed var(--line);
+  }
+  .steps li:last-child{border-bottom:0}
+  .steps li::before{
+    counter-increment:s;content:counter(s);
+    position:absolute;left:0;top:.7rem;width:1.8rem;height:1.8rem;border-radius:50%;
+    background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:.85rem;
+    display:grid;place-items:center;border:1px solid rgba(15,107,107,.2);
+  }
+  .steps b{color:var(--ink)}
+
+  /* ---------- 数字条 ---------- */
+  .numbers{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;margin:1.4rem 0}
+  .numbers div{background:var(--card);padding:1rem .8rem;text-align:center}
+  .numbers .big{font-family:var(--serif);font-size:1.6rem;font-weight:700;color:var(--accent);line-height:1.2;display:block}
+  .numbers .lbl{font-size:.75rem;color:var(--muted);line-height:1.4;display:block;margin-top:.25rem}
+  @media (max-width:860px){.numbers{grid-template-columns:repeat(2,1fr)}}
+
+  /* ---------- 问答 ---------- */
+  details.qa{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:.7rem 1rem;margin:.6rem 0}
+  details.qa summary{cursor:pointer;font-weight:600;font-size:.93rem;color:var(--ink)}
+  details.qa summary::marker{color:var(--accent)}
+  details.qa p{font-size:.9rem;color:var(--ink-2);margin:.6em 0 .2em}
+
+  .kv{display:grid;grid-template-columns:9rem 1fr;gap:.2rem 1rem;font-size:.9rem}
+  .kv dt{color:var(--muted);font-size:.82rem;padding-top:.1rem}
+  .kv dd{margin:0}
+  @media (max-width:640px){.kv{grid-template-columns:1fr}.kv dt{margin-top:.5rem}}
+
+  .footer{margin-top:4rem;padding-top:1.4rem;border-top:1px solid var(--line);font-size:.82rem;color:var(--muted)}
+  .totop{
+    position:fixed;right:1.2rem;bottom:1.2rem;width:2.6rem;height:2.6rem;border-radius:50%;
+    background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);
+    display:grid;place-items:center;color:var(--ink-2);font-size:1rem;z-index:40;
+  }
+  .totop:hover{background:var(--accent-soft);color:var(--accent)}
+  @media print{
+    header.top,.totop{display:none}
+    body{background:#fff;font-size:11pt}
+    section.chapter{page-break-inside:auto}
+    .card,.table-wrap,.callout{box-shadow:none}
+    a{color:inherit;border:0}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">论文讲解 <span>/</span> GROUP 2023</div>
+    <nav class="toc">
+      <a href="#s1">背景</a>
+      <a href="#s2">问题</a>
+      <a href="#s3">动机</a>
+      <a href="#s4">工作流</a>
+      <a href="#s5">三种提交</a>
+      <a href="#s6">核心技术</a>
+      <a href="#s7">原型</a>
+      <a href="#s8">评估</a>
+      <a href="#s9">局限</a>
+      <a href="#s10">与你课题</a>
+      <a href="#s11">问答</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= 首屏 ================= -->
+<div class="hero">
+  <div class="kicker">
+    <span class="tag">PACM HCI · GROUP 2023</span>
+    <span class="tag gray">实时协同编程</span>
+    <span class="tag gray">代码归属</span>
+    <span class="tag gray">Git 集成</span>
+    <span class="tag gray">19 页</span>
+  </div>
+
+  <h1 class="title">Integrating Real-Time and Non-Real-Time Collaborative Programming:<br>Workflow, Techniques, and Prototypes</h1>
+  <p class="subtitle">把“边写边同步”的实时协同，接回“提交—diff—blame”的 Git 世界</p>
+
+  <p class="authors">Yifan Ma, Batu Qi, Wenhua Xu, Mingjie Wang, Bowen Du, Hongfei Fan（同济大学软件学院 / 华威大学）</p>
+  <p class="meta">Proc. ACM Hum.-Comput. Interact. 7(GROUP), Article 13, 2023 · 19 pages · <code>doi:10.1145/3567563</code></p>
+
+  <dl class="glance">
+    <div><dt>研究问题</dt><dd>实时协同会话里的改动，提交到 Git 后无法区分是谁写的<small>作者归属（authorship）在实时协同中丢失</small></dd></div>
+    <div><dt>核心思路</dt><dd>用编辑历史反推 diff 的每一块归谁<small>Colored Lines Algorithm</small></dd></div>
+    <div><dt>落地形态</dt><dd>CoEclipse / CoIDEA 两个 IDE 插件<small>Eclipse 与 IntelliJ IDEA</small></dd></div>
+    <div><dt>验证结果</dt><dd>SUS 81.3 / 83.5<small>13 人、5 队；2500 次操作约 3 秒</small></dd></div>
+  </dl>
+
+  <div class="tldr">
+    <h3>一分钟版本</h3>
+    <p>实时协同编程（多人同时编辑同一份代码、改动即时同步）很高效，但它和 Git 这套“非实时协同”是割裂的：会话结束后由一个人提交，Git 只看到“提交者”，看不到“每一行到底是谁改的”。<code>git blame</code> 因此失真，代码评审、绩效统计、新人接手模块都会受影响。</p>
+    <p>论文做了三件事：<b>①</b> 提出一套可在两种协同方式间来回切换的工作流；<b>②</b> 设计 <b>Colored Lines Algorithm</b>，把会话期间的编辑操作历史映射到 Git diff 的每个变更块上，从而按作者拆成多个 commit（一作者一提交）；<b>③</b> 实现两个 IDE 插件并做用户评估与性能实验。</p>
+    <p>一句话：<b>它解决的不是“怎么同步”，而是“同步完了以后，历史记录还认不认得出人”。</b></p>
+  </div>
+</div>
+
+<!-- ================= 1 背景 ================= -->
+<section class="chapter" id="s1">
+  <span class="chap-no">01 / BACKGROUND</span>
+  <h2>两种协同范式，各有各的“历史观”</h2>
+  <p class="lead">理解这篇论文，先要接受一个前提：软件开发的协同有两条技术路线，它们对“变更”的记录方式根本不同。</p>
+
+  <div class="table-wrap">
+    <table>
+      <caption>表 1 · 非实时协同与实时协同的对照（据论文第 2 节整理）</caption>
+      <thead><tr><th style="width:6rem">维度</th><th>非实时协同（VCS / Git）</th><th>实时协同（RCP）</th></tr></thead>
+      <tbody>
+        <tr><td>同步时机</td><td>本地改动私有，手动 commit / push 才共享</td><td>编辑操作即时传播并应用到他端</td></tr>
+        <tr><td>耦合程度</td><td>松耦合、长周期</td><td>紧耦合、短会话</td></tr>
+        <tr><td>冲突处理</td><td>Git 检测冲突，人来解决</td><td>底层一致性算法（OT）自动合并</td></tr>
+        <tr><td>历史单位</td><td>commit + diff（按行）</td><td>编辑操作（按字符/区间）</td></tr>
+        <tr><td>归属信息</td><td>author / committer 字段，可 blame</td><td><b>不记录</b>——这正是论文要补的洞</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout insight">
+    <span class="label">关键观察</span>
+    <p>两种范式的“原子”不一样：Git 的历史原子是 <b>commit 里的 diff 块</b>，实时协同的历史原子是 <b>编辑操作</b>。论文的全部技术难点，就来自这两个坐标系对不上——这也是它最有借鉴价值的地方。</p>
+  </div>
+</section>
+
+<!-- ================= 2 问题 ================= -->
+<section class="chapter" id="s2">
+  <span class="chap-no">02 / PROBLEM</span>
+  <h2>问题：会话一结束，作者就“蒸发”了</h2>
+
+  <p>论文用了一个非常清楚的例子（第 2 节末）：Alice 和 Bob 在同一个实时会话里，Alice 改 <code>funcA</code>、Bob 改 <code>funcB</code>。Bob 先走，Alice 收尾提交。由于实时协同把所有改动都应用在 Alice 的工作副本上，Git 视角下<b>这些改动全部是 Alice 的贡献</b>。</p>
+
+  <div class="callout crit">
+    <span class="label">后果链条</span>
+    <p>blame 失真 → 代码评审找不到该找的人 → 新人不知道某模块的“owner” → 用 git 记录做绩效/工单分派的自动化工具直接算错。论文的受访者 P3、P11 都提到了这类真实用法。</p>
+  </div>
+
+  <p>那为什么不学 Google Docs 那样标记“谁改的”？论文专门解释了三个差异（第 2 节）：</p>
+  <ul>
+    <li><b>对象不同</b>：编程要处理整棵源码树，创建/删除/重命名文件目录很频繁，文档协同几乎没有；</li>
+    <li><b>锚点不同</b>：文档协同按“编辑操作”即时标记；Git 的归属建立在 <b>commit + diff 算法</b> 上，而 commit 是人事后手动触发的；</li>
+    <li><b>时机不同</b>：操作发生时还不知道它最终会落在 diff 的哪一块——中间可能被别人的插入/删除挤走，甚至被整体删掉。</li>
+  </ul>
+
+  <p>最后一条是真正的难点，也是后面算法的用武之地。</p>
+</section>
+
+<!-- ================= 3 动机 ================= -->
+<section class="chapter" id="s3">
+  <span class="chap-no">03 / MOTIVATION</span>
+  <h2>先做用户研究，再定设计目标</h2>
+
+  <p>论文没有直接开做系统，而是先跑了一轮探索性研究（第 3.1 节）：<b>85 份</b>有效问卷（剔除无 Git 经验者）+ <b>30 人</b>半结构化访谈，受访者覆盖企业工程师、教师与学生。</p>
+
+  <div class="numbers">
+    <div><span class="big">85</span><span class="lbl">份有效问卷</span></div>
+    <div><span class="big">30</span><span class="lbl">人接受访谈</span></div>
+    <div><span class="big">91%</span><span class="lbl">认为“追溯贡献者”对排障很关键</span></div>
+    <div><span class="big">58.8%</span><span class="lbl">经常用 Git 查看分支/提交、判断代码作者</span></div>
+    <div><span class="big">7 人</span><span class="lbl">主动提出“两种协同方式来回切换”的困扰</span></div>
+  </div>
+
+  <p>由此提炼出三条设计目标（第 3.2 节），后文每个技术选择都能对上号：</p>
+
+  <div class="grid-3">
+    <div class="card">
+      <h4 style="margin-top:0">目标 A · 切换要顺</h4>
+      <p style="font-size:.9rem;color:var(--ink-2);margin:0">实时与非实时之间能流畅往返，会话结束后提交要自然；同一项目里不同人可以各用各的方式。</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">目标 B · 与 Git 无缝</h4>
+      <p style="font-size:.9rem;color:var(--ink-2);margin:0">必须兼容程序员熟悉的 Git 分支模型与 diff 算法（如 Myers），归属过程自动、透明。</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">目标 C · 支持高级实时协同</h4>
+      <p style="font-size:.9rem;color:var(--ink-2);margin:0">跨 IDE、可并发增删文件、冲突自动消解且保证一致性（直接复用成熟的 OT）。</p>
+    </div>
+  </div>
+
+  <div class="callout note">
+    <span class="label">写作上值得学的一点</span>
+    <p>“58.8% 的人依赖 blame”这句话不是装饰：它把“技术缺陷”翻译成了“用户需求”，后面的系统设计因此有了合法性。你的开题报告里“开发者需要恢复上下文”这类论断，也应有类似的量化或访谈支撑。</p>
+  </div>
+</section>
+
+<!-- ================= 4 工作流 ================= -->
+<section class="chapter" id="s4">
+  <span class="chap-no">04 / WORKFLOW</span>
+  <h2>工作流：创建 → 加入 → 协作 → 提交</h2>
+
+  <h3>4.1 创建与加入会话</h3>
+  <p>任何人基于一个 Git 仓库就能发起实时会话：工具把本地文件推到协同服务器，服务器充当操作传播与同步的中心。其他人加入时，先被要求把未提交的本地改动 commit 掉，然后按本地状态分三种情况处理：</p>
+
+  <div class="table-wrap">
+    <table>
+      <caption>表 2 · 加入会话时的三种环境（论文 4.1 节）</caption>
+      <thead><tr><th style="width:12rem">本地状态</th><th>系统动作</th></tr></thead>
+      <tbody>
+        <tr><td>从未 clone 过仓库</td><td>从协同服务器自动 clone，并切到创建者所在分支</td></tr>
+        <tr><td>已 clone，且与创建者同一 commit</td><td>无需同步，直接开始协作</td></tr>
+        <tr><td>已 clone，但不在同一 commit</td><td>自动 fetch，并 reset 到会话当前所在的 commit</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>同步完成后，新成员会补收“从会话创建到此刻”累积的所有编辑操作，于是所有人的代码副本完全一致。不在会话里的同事照常走非实时流程，等会话成员切回去再 push / merge。</p>
+
+  <div class="callout insight">
+    <span class="label">注意这个设计</span>
+    <p>“加入 = 对齐到某个 commit + 回放操作历史”，本质上是一次<b>状态快照 + 增量重放</b>。这正是你课题里“任务中断后恢复上下文”可以借用的机制原型：恢复不是恢复聊天记录，而是恢复到一个<b>可继续工作的确定状态</b>。</p>
+  </div>
+
+  <h3>4.2 会话中的两类编辑操作</h3>
+  <p>会话期间可以并发做两类操作：<b>文件内容级</b>（在文件里插入/删除字符串）与<b>文件树级</b>（创建、删除、重命名文件与目录）。并发导致的操作冲突（经典的“两人同时在同一位置插入，两端顺序相反”）交给底层 OT 保证收敛，论文明确说这是“采用成熟方案”，不是本文贡献。</p>
+
+  <h3>4.3 离开与提交：三种模式</h3>
+  <p>这是全文的枢纽。会话结束时由某个人代为提交，但“怎么记”有三种选择（论文 4.3 节，图 3）：</p>
+
+  <div class="modes">
+    <div class="mode">
+      <span class="badge">Mode A</span>
+      <h4>Single Commit</h4>
+      <p>所有改动打成一个 commit，author 与 committer 都是执行提交的人。</p>
+      <p class="pro">最简单，适合结对编程、协同调试</p>
+      <p class="con">完全丢失会话内的归属，等于没解决本文问题</p>
+      <p style="font-size:.78rem;color:var(--muted)">论文把它当作对照基线</p>
+    </div>
+    <div class="mode">
+      <span class="badge">Mode B</span>
+      <h4>Detailed Single Commit</h4>
+      <p>仍是一个 commit，但在 message 里写入所有协作者姓名/邮箱，标记为共同作者（co-authors）。</p>
+      <p class="pro">成本极低，GitHub 等平台原生支持多作者</p>
+      <p class="con">blame 仍归到提交者，行级归属依旧缺失</p>
+    </div>
+    <div class="mode">
+      <span class="badge">Mode C</span>
+      <h4>One Collaborator One Commit</h4>
+      <p>按 diff 块分析出每块的真实作者，迭代暂存，生成一串 commit：<b>一作者一提交</b>。</p>
+      <p class="pro">blame 精确到行，作者即真实作者</p>
+      <p class="con">实现复杂，需要“操作历史 ↔ diff”对齐算法</p>
+      <p style="font-size:.78rem;color:var(--muted)">论文的主贡献，也是用户最偏好的长期方案</p>
+    </div>
+  </div>
+
+  <div class="commitgraph">
+    <svg viewBox="0 0 760 190" role="img" aria-label="Mode C 生成的提交链示意图">
+      <defs>
+        <marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="3.2" orient="auto">
+          <path d="M0,0 L7,3.2 L0,6.4 z" fill="#8a97a6"/>
+        </marker>
+      </defs>
+      <!-- 主干 -->
+      <line x1="60" y1="70" x2="700" y2="70" stroke="#c9d2dc" stroke-width="2"/>
+      <!-- 节点 -->
+      <g font-family="Segoe UI, PingFang SC, sans-serif">
+        <circle cx="90" cy="70" r="13" fill="#eef1f4" stroke="#9aa7b6" stroke-width="2"/>
+        <text x="90" y="74.5" font-size="11" text-anchor="middle" fill="#4a5766">base</text>
+        <text x="90" y="112" font-size="11" text-anchor="middle" fill="#6b7787">会话起点</text>
+
+        <circle cx="270" cy="70" r="15" fill="#fde8e4" stroke="#c2410c" stroke-width="2.5"/>
+        <text x="270" y="74.5" font-size="11" text-anchor="middle" fill="#8a2c0a" font-weight="700">Bob</text>
+        <text x="270" y="112" font-size="11" text-anchor="middle" fill="#6b7787">commit 1</text>
+        <text x="270" y="130" font-size="10" text-anchor="middle" fill="#8a97a6">author = Bob</text>
+
+        <circle cx="450" cy="70" r="15" fill="#e4ebfb" stroke="#1d4ed8" stroke-width="2.5"/>
+        <text x="450" y="74.5" font-size="11" text-anchor="middle" fill="#173a8f" font-weight="700">Alice</text>
+        <text x="450" y="112" font-size="11" text-anchor="middle" fill="#6b7787">commit 2</text>
+        <text x="450" y="130" font-size="10" text-anchor="middle" fill="#8a97a6">author = Alice</text>
+
+        <circle cx="630" cy="70" r="15" fill="#efe6fb" stroke="#6d28d9" stroke-width="2.5"/>
+        <text x="630" y="74.5" font-size="11" text-anchor="middle" fill="#4c1d95" font-weight="700">Carol</text>
+        <text x="630" y="112" font-size="11" text-anchor="middle" fill="#6b7787">commit 3</text>
+        <text x="630" y="130" font-size="10" text-anchor="middle" fill="#8a97a6">author = Carol</text>
+
+        <text x="380" y="168" font-size="11" text-anchor="middle" fill="#6b7787">
+          三个 commit 的改动之和 ≡ 原 Git diff 的改动总和（等价于“各自开分支再 rebase 回来”）
+        </text>
+      </g>
+    </svg>
+    <p class="cg-cap">图 1 · Mode C 的提交链：author 是真实作者，committer 是执行提交的人。后续 <code>git blame</code> 即可逐行看到真实归属。</p>
+  </div>
+</section>
+
+<!-- ================= 5 三种模式对比 ================= -->
+<section class="chapter" id="s5">
+  <span class="chap-no">05 / COMPARISON</span>
+  <h2>三种模式的取舍</h2>
+
+  <div class="table-wrap">
+    <table>
+      <caption>表 3 · 三种提交模式的横向对照（综合论文 4.3 与第 6 节评估结果）</caption>
+      <thead>
+        <tr><th>模式</th><th>commit 数</th><th>行级归属</th><th>实现成本</th><th>适用场景</th><th>用户态度</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><b>A</b> 单次提交</td><td>1</td><td>无</td><td>极低</td><td>结对编程、临时调试</td><td>可接受，作为基线</td></tr>
+        <tr><td><b>B</b> 带协作者信息</td><td>1</td><td>无（仅 commit 级）</td><td>低</td><td>需要留痕但不在意 blame</td><td>认可其“省事”</td></tr>
+        <tr><td><b>C</b> 一作者一提交</td><td>N（作者数）</td><td><b>有</b></td><td>高（需对齐算法）</td><td>长会话、正式项目、需评审</td><td>复杂度略高但<b>长期会话首选</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>论文的评估结论很克制：参与者对“哪个模式最好”并不一致，但一致认为<b>长时间实时协作后更愿意用 Mode C</b>。这个细节说明作者没有把 Mode C 说成万能方案，而是把它定位成“需要精确归属时的选项”。</p>
+</section>
+
+<!-- ================= 6 核心技术 ================= -->
+<section class="chapter" id="s6">
+  <span class="chap-no">06 / TECHNIQUE</span>
+  <h2>核心技术：Colored Lines Algorithm</h2>
+
+  <h3>6.1 架构：三层，服务端管同步，客户端管历史</h3>
+  <p>系统建在作者团队此前的 CP-ROOF 框架上（论文 5.1 节，图 4），分三层：</p>
+  <div class="grid-3">
+    <div class="card">
+      <h4 style="margin-top:0">Collaboration Server</h4>
+      <p style="font-size:.88rem;color:var(--ink-2);margin:0">接收并传播编辑操作；内嵌一个 Git 服务器，支撑 4.1 的 clone / fetch / reset 同步。</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">Collaboration Client</h4>
+      <p style="font-size:.88rem;color:var(--ink-2);margin:0">通用接口与公共类；实现 OT 一致性维护；<b>保存会话期间全部细粒度编辑历史</b>；执行三种提交模式。</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">IDE Adaptor</h4>
+      <p style="font-size:.88rem;color:var(--ink-2);margin:0">插件层，处理用户操作与平台相关 UI（启停会话、执行提交），由此实现跨 IDE。</p>
+    </div>
+  </div>
+
+  <div class="callout insight">
+    <span class="label">架构上的关键决定</span>
+    <p>“<b>客户端保存完整编辑历史</b>”是整套方案的前提。没有这份操作日志，事后就不可能反推归属。换句话说：<b>归属能力是采集时决定的，不是提交时补出来的</b>——这条对你做“变更溯源”同样成立。</p>
+  </div>
+
+  <h3>6.2 难点：操作坐标 ≠ diff 坐标</h3>
+  <p>提交时，Git 用 diff 算法（如 Myers）算出“哪几行被增删”。但会话期间的编辑操作是按<b>字符位置</b>记录的，而且会互相影响：</p>
+  <ul>
+    <li>某人在你插入的那行<b>之前</b>删了一行 → 你的行号要前移；</li>
+    <li>某人在你插入的那行<b>之前</b>又插了内容 → 你的行号要后移；</li>
+    <li>你插入的内容后来<b>被别人删掉</b> → 这次插入的最终效果为零，不应产生 diff 块；</li>
+    <li>你插入的行后来<b>被别人改写</b> → 按“最后修改者”原则，这一行归他。</li>
+  </ul>
+
+  <p>论文为此定义了两个推断函数（算法 2 给出 <code>postEffect</code>，<code>preEffect</code> 对称）：</p>
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="margin-top:0"><code>postEffect(ATOM_OP, 后续操作, LinesY)</code></h4>
+      <p style="font-size:.9rem;color:var(--ink-2);margin:0">把一次原子编辑（如“在第 5 行末插入字符 A”）的位置，沿<b>其后的所有操作</b>推演到协作结束时的最终行号。若该内容已被删除，返回 −1（无效果）。</p>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0"><code>preEffect(ATOM_OP, 之前操作, LinesX)</code></h4>
+      <p style="font-size:.9rem;color:var(--ink-2);margin:0">反向回溯到协作开始前的坐标，用来定位“这次插入在原始文件里的位置”，从而对上 diff 中“新增行”的编号。</p>
+    </div>
+  </div>
+
+  <h3>6.3 算法四步</h3>
+  <ol class="steps">
+    <li><b>取两端快照。</b>用 Git 拿到协作前 <code>LinesX</code> 与协作后 <code>LinesY</code>，并算出 diff 块列表 <code>CH</code>。</li>
+    <li><b>给行“上色”。</b>遍历全部编辑操作 <code>OP</code>，把每个原子操作拆开，分别用 <code>preEffect</code> 写入 <code>colorMapX</code>、用 <code>postEffect</code> 写入 <code>colorMapY</code>，值为该操作的发起站点（作者）。同一行被多次覆盖时，保留最后一次。</li>
+    <li><b>原子化 diff。</b>把 Git 的 diff 块拆成“单行级”变更 <code>CH'</code>，使每块只对应一行新增或一行删除。</li>
+    <li><b>按作者分派。</b>新增行查 <code>colorMapX</code>，删除行查 <code>colorMapY</code>，得到每个变更的作者；再按作者分组、迭代暂存，生成一串 commit。</li>
+  </ol>
+
+  <h3>6.4 一个走查例子</h3>
+  <p>假设协作前文件如下，A 在 <code>void c() {}</code> 之后插入一行，B 随后删掉了 <code>void b() {}</code>：</p>
+
+  <div class="ops">
+    <div class="op"><span class="dot" style="background:var(--a)"></span><div><span class="tagx">A · insert</span> 在第 4 行后插入 <code>int x = 1;</code></div></div>
+    <div class="op"><span class="dot" style="background:var(--b)"></span><div><span class="tagx">B · delete</span> 删除第 2 行 <code>void b() {}</code></div></div>
+  </div>
+
+  <div class="compare">
+    <div class="filebox">
+      <div class="fname">LinesX · 协作前</div>
+      <div class="lines">
+        <div class="ln"><span class="no">1</span><span>public class Demo {</span></div>
+        <div class="ln"><span class="no">2</span><span>    void a() {}</span></div>
+        <div class="ln del"><span class="no">3</span><span>    void b() {}</span><span class="who" style="background:#fca5a5">B 删</span></div>
+        <div class="ln"><span class="no">4</span><span>    void c() {}</span></div>
+        <div class="ln"><span class="no">5</span><span>}</span></div>
+      </div>
+    </div>
+    <div class="filebox">
+      <div class="fname">LinesY · 协作后</div>
+      <div class="lines">
+        <div class="ln"><span class="no">1</span><span>public class Demo {</span></div>
+        <div class="ln"><span class="no">2</span><span>    void a() {}</span></div>
+        <div class="ln"><span class="no">3</span><span>    void c() {}</span></div>
+        <div class="ln add"><span class="no">4</span><span>    int x = 1;</span><span class="who" style="background:#fdba74">A 增</span></div>
+        <div class="ln"><span class="no">5</span><span>}</span></div>
+      </div>
+    </div>
+  </div>
+
+  <p>如果没有 <code>postEffect</code>，A 的插入操作记录的是“第 5 行前”，而最终它落在第 4 行——直接按操作坐标去对 diff，就会错位。算法先把 A 的插入推演到 Y 的第 4 行，再与原子化后的 diff 块（新增第 4 行）对齐，于是这一块被正确判给 A；B 的删除则通过 <code>postEffect</code> 落到 Y 的相应位置，判给 B。最终生成两个 commit：一个只含 B 的删除，一个只含 A 的新增，二者之和等于 Git 原始 diff。</p>
+
+  <div class="callout warn">
+    <span class="label">规则要说清楚</span>
+    <p>论文明确采用“<b>行的最后修改者</b>”作为归属规则：A 插入的行若之后被 B 改写，该行归 B；被整体删除的插入不产生 diff 块，也就不归属任何人。这与 <code>git blame</code> 的语义一致，但也意味着<b>“共同编辑同一行”的协作过程会被压缩成一个人</b>——这是可讨论的设计取舍，不是 bug。</p>
+  </div>
+
+  <h3>6.5 性能：随操作数增长，与人数无关</h3>
+  <div class="table-wrap">
+    <table>
+      <caption>表 4 · Mode C 中“计算并归属作者”的耗时（论文表 1，i7@2.6GHz / 64GB / macOS 12.4）</caption>
+      <thead><tr><th>协作者数</th><th class="num">n = 10</th><th class="num">n = 50</th><th class="num">n = 500</th><th class="num">n = 2500</th></tr></thead>
+      <tbody>
+        <tr><td>2 人</td><td class="num">0.14 ms</td><td class="num">1.39 ms</td><td class="num">140.22 ms</td><td class="num">2997.91 ms</td></tr>
+        <tr><td>5 人</td><td class="num">0.13 ms</td><td class="num">1.58 ms</td><td class="num">132.22 ms</td><td class="num">3192.93 ms</td></tr>
+        <tr><td>10 人</td><td class="num">0.12 ms</td><td class="num">1.50 ms</td><td class="num">142.55 ms</td><td class="num">3025.08 ms</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>读法：小会话几乎无感；500 次操作约 0.14 秒；2500 次操作约 3 秒——提交时会有可感知的等待，但作者认为可接受，并强调<b>耗时与协作者人数无关</b>（因为算的是操作效果，不是两两比较），这是可扩展性的论据。</p>
+</section>
+
+<!-- ================= 7 原型 ================= -->
+<section class="chapter" id="s7">
+  <span class="chap-no">07 / PROTOTYPE</span>
+  <h2>两个插件：CoEclipse 与 CoIDEA</h2>
+
+  <p>用 Java 实现（复用 CP-ROOF），分别做成 Eclipse 与 IntelliJ IDEA 插件（论文 5.3 节）。UI 上只有两处关键交互：编辑器里实时看到对方改动；一个 <b>Git Integration</b> 按钮，点开选提交模式、填（系统预填的）提交信息，系统自动暂存并提交。</p>
+
+  <ul>
+    <li>提交信息模板自动带上协作者与会话时间等信息；</li>
+    <li>生成的提交可直接用 <code>git log</code>、GitKraken 等常规工具查看（论文图 8、图 9 展示了三作者会话生成的三条提交）；</li>
+    <li>跨 IDE 是硬需求：同一会话里 Eclipse 与 IDEA 用户可以一起编辑同一个文件（论文图 6）。</li>
+  </ul>
+</section>
+
+<!-- ================= 8 评估 ================= -->
+<section class="chapter" id="s8">
+  <span class="chap-no">08 / EVALUATION</span>
+  <h2>评估：13 人、5 队、SUS 80+</h2>
+
+  <div class="grid-2">
+    <div class="card">
+      <h4 style="margin-top:0">用户评估（6.1 节）</h4>
+      <dl class="kv">
+        <dt>被试</dt><dd>13 名软件工程及相关专业本/硕学生，平均 2.3 年 Git 经验，5 人有半年以上实习</dd>
+        <dt>分组</dt><dd>2—4 人一队，共 5 队</dd>
+        <dt>任务</dt><dd>先 clone 仓库，10—15 分钟内协作完成一个简单 Java Web 服务器，最后指定一人用 Mode C 提交</dd>
+        <dt>方法</dt><dd>动手教程 → 协作编程 → 半结构化访谈 → SUS 问卷</dd>
+        <dt>结果</dt><dd>平均协作 12.3 分钟；归属全部正确；<b>SUS：CoEclipse 81.3、CoIDEA 83.5</b></dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h4 style="margin-top:0">性能实验（6.2 节）</h4>
+      <dl class="kv">
+        <dt>对象</dt><dd>Mode C 中最耗时的“计算与归属”步骤（即 Colored Lines Algorithm）</dd>
+        <dt>方法</dt><dd>模拟不同规模（10—2500 次操作）× 不同人数（2/5/10）的并发编辑，测处理时间</dd>
+        <dt>结果</dt><dd>见上表；小规模可忽略，2500 次操作约 3 秒，且不随人数增长</dd>
+      </dl>
+    </div>
+  </div>
+
+  <h4>访谈里值得注意的三条</h4>
+  <ul>
+    <li><b>认可归属的价值</b>：P12“我常常没注意别人做了什么，正确的归属帮我搞清会话历史”；P13“新人加入后要 review 他们的代码，blame 准确很重要”。</li>
+    <li><b>Mode C 的心理门槛</b>：普遍觉得比 A/B 复杂，但看过 Git GUI 里的提交后都能理解；<b>长会话更愿意用 C</b>。</li>
+    <li><b>暴露的短板：感知（awareness）不足</b>。8 人提到希望看到对方光标，有人建议显示头像。这是实时协同的经典问题，也恰好是论文没解决的部分。</li>
+  </ul>
+</section>
+
+<!-- ================= 9 局限 ================= -->
+<section class="chapter" id="s9">
+  <span class="chap-no">09 / LIMITS</span>
+  <h2>局限与可质疑之处</h2>
+
+  <p>论文自述的未来工作（第 7 节）：支持“部分提交”（只挑一部分改动文件）、把算法扩展到文件/目录级操作、把评估从实验室推向工业场景与更长会话。</p>
+
+  <p>除此之外，读的时候可以自己补几条批判性判断：</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th style="width:11rem">维度</th><th>问题</th><th>严重度</th></tr></thead>
+      <tbody>
+        <tr><td>归属语义</td><td>“最后修改者优先”会把协作过程压平成单人贡献；对“共同编写”的场景可能失真，也未提供多作者标注</td><td>中</td></tr>
+        <tr><td>覆盖范围</td><td>算法只处理文件内容；文件/目录的创建、删除、重命名尚未纳入（作者自述）</td><td>中</td></tr>
+        <tr><td>性能</td><td>2500 次操作约 3 秒，属可感知停顿；论文未给复杂度分析，也未见增量式计算</td><td>中</td></tr>
+        <tr><td>评估效度</td><td>n=13、5 队、实验室、12 分钟任务；无对照组的量化比较，SUS 仅描述统计，无显著性检验</td><td>中高</td></tr>
+        <tr><td>边界情形</td><td>未讨论“会话成员与非会话成员并发修改同一文件”时的合并与归属（实际交给 Git，可能再次丢失归属）</td><td>中</td></tr>
+        <tr><td>生态绑定</td><td>只实现 Git；作者称可扩展其他 VCS，但未验证</td><td>低</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= 10 与你课题 ================= -->
+<section class="chapter" id="s10">
+  <span class="chap-no">10 / RELEVANCE</span>
+  <h2>与你课题的关系：可迁移的是“管线”，不是“场景”</h2>
+
+  <p>这篇论文属于上一轮清单里我标为“强相关”的第 4 篇。它不研究代码智能体，但它和你课题共享同一个<b>结构性难题</b>：</p>
+
+  <div class="callout insight">
+    <span class="label">共同难题</span>
+    <p>“变更发生时的记录”与“变更沉淀后的历史（diff / commit / 文件现状）”是两套坐标系，中间隔着别人的插入、删除、改写与时间。谁能把两套坐标对齐，谁就能回答“这段代码是怎么来的”。</p>
+    <p>论文对齐的是<b>操作 ↔ diff 块</b>（回答“谁改的”）；你要对齐的是<b>事件（对话/工具调用）↔ 变更块 ↔ 测试</b>（回答“为什么改、依据什么”）。<b>方法同构，目标不同。</b></p>
+  </div>
+
+  <h3>10.1 概念映射</h3>
+  <div class="table-wrap">
+    <table>
+      <caption>表 5 · 论文概念 → 你课题概念的对应关系（建议写进“研究基础”或相关工作）</caption>
+      <thead><tr><th style="width:14rem">论文中的概念</th><th>你课题中的对应物</th><th>可借鉴之处</th></tr></thead>
+      <tbody>
+        <tr><td>实时协同会话（session）</td><td>开发任务（Task）的边界</td><td>“创建—加入—结束”的生命周期，可类比任务的开始、续接与收尾</td></tr>
+        <tr><td>站点 site / 协作者</td><td>主体（开发者 / 智能体）</td><td>把“谁”作为一等字段贯穿事件模型</td></tr>
+        <tr><td>编辑操作 OP 与操作历史</td><td>统一事件流（Turn / ToolCall / FileChange）</td><td>“采集时就存全量细粒度历史”是溯源的前提</td></tr>
+        <tr><td><code>preEffect</code> / <code>postEffect</code></td><td>diff 坐标 ↔ 当前文件坐标的行号漂移映射</td><td>直接对应你方案里的“文件级代码位置映射”，且给出了可实现的推演思路</td></tr>
+        <tr><td>Colored Lines（按行上色归属）</td><td>变更块（hunk）→ 触发来源的关联</td><td>“原子化 + 逐块归因”的工程套路</td></tr>
+        <tr><td>Mode C：一作者一提交</td><td>按来源把变更块分组，生成“变更卡片”</td><td>分组粒度与提交策略的设计权衡</td></tr>
+        <tr><td><code>git blame</code> 归属查询</td><td>从代码行反查请求/对话/测试（双向溯源）</td><td>“从代码出发”的查询入口设计</td></tr>
+        <tr><td>加入会话时对齐到同一 commit + 回放操作</td><td>任务中断后的上下文恢复（Checkpoint）</td><td>恢复 = 快照 + 增量重放，而非重读聊天记录</td></tr>
+        <tr><td>三种提交模式</td><td>任务快照的三种粒度（单快照 / 带摘要 / 按变更来源拆分）</td><td>给用户“记录多少”的选择权，而非一刀切</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>10.2 可以直接借的三点</h3>
+  <ol>
+    <li><b>“操作日志 → 原子化 diff → 归属”的三段式管线。</b>你的“事件 → 变更块 → 证据链”几乎是同一根管线的另一种输入输出，可以在论文里明确写成方法来源，并说明你把“作者归属”扩展成了“原因 + 验证依据”。</li>
+    <li><b>以成熟 diff 为锚点，不自造坐标。</b>论文坚持对齐 Myers diff，好处是结果能被 <code>git blame</code>、GitKraken 等既有工具直接消费。你的系统也应尽量让产物落到 Git 可读的形态（如变更块与 commit 关联），而不是只在自家数据库里成立。</li>
+    <li><b>评估写法。</b>“小样本 SUS + 半结构化访谈 + 关键步骤性能实验”这套组合，与你开题报告里 4—5 人、SUS 必做、NASA-TLX 可选的设定高度一致，可直接作为写法参照与对照文献。</li>
+  </ol>
+
+  <h3>10.3 不能照搬的三点</h3>
+  <ol>
+    <li><b>一致性不是你的问题。</b>OT/CRDT 解决多人同时编辑的收敛，而你的场景是单开发者 + 智能体，冲突主要发生在“人对智能体改动的接受/回退”，不是字符级并发。</li>
+    <li><b>主体是异步的。</b>智能体的改动往往由一次工具调用批量产生（整个文件重写、多个 hunk 一起出现），粒度天然是 hunk 而非逐字符；直接套“按操作上色”会很别扭，应按“工具调用 → 文件写入 → diff 块”对齐。</li>
+    <li><b>论文只回答“谁改的”，你要回答“为什么改、依据什么”。</b>这是你相对它的增量：把对话意图与测试结果接进证据链。写作时务必把这一点讲成“扩展”，而不是“重复”。</li>
+  </ol>
+
+  <div class="callout note">
+    <span class="label">引用建议</span>
+    <p>放在“相关工作 / 变更与任务上下文的组织单位”或“研究基础”一小段即可，约 100—150 字：先讲它解决了实时协同中作者归属丢失的问题（工作流 + Colored Lines + 两种提交粒度），再指出它止步于“谁改的”，未涉及变更动因与验证依据，从而自然过渡到你的问题。<b>不要</b>把它写成“实时协同编程与代码智能体相似所以相关”——这个跳跃容易被答辩老师追问。</p>
+  </div>
+
+  <h4>BibTeX</h4>
+  <pre><span class="cmt">@article{ma2023integrating,</span>
+  author    = {Ma, Yifan and Qi, Batu and Xu, Wenhua and Wang, Mingjie and Du, Bowen and Fan, Hongfei},
+  title     = {Integrating Real-Time and Non-Real-Time Collaborative Programming:
+               Workflow, Techniques, and Prototypes},
+  journal   = {Proceedings of the ACM on Human-Computer Interaction},
+  volume    = {7},
+  number    = {GROUP},
+  articleno = {13},
+  year      = {2023},
+  pages     = {1--19},
+  doi       = {10.1145/3567563}
+<span class="cmt">}</span></pre>
+</section>
+
+<!-- ================= 11 问答 ================= -->
+<section class="chapter" id="s11">
+  <span class="chap-no">11 / Q&amp;A</span>
+  <h2>如果答辩被问到这篇论文</h2>
+
+  <details class="qa" open>
+    <summary>它和你的课题到底什么关系？</summary>
+    <p>方法同源、场景不同。它解决“多人实时协同后，Git 历史认不出作者”；我解决“单开发者用智能体时，代码变更认不出来源与依据”。我借鉴的是它“操作历史 ↔ diff 块对齐”的管线与“采集时存全量历史”的前提，扩展的是把对话意图与测试结果纳入证据链。</p>
+  </details>
+
+  <details class="qa">
+    <summary>为什么它不直接用 Git 的 co-author 标记（Mode B）？</summary>
+    <p>因为 co-author 只写在 commit message 里，<code>git blame</code> 仍然把每一行归给提交者，行级归属没有解决。Mode B 的定位是“最低成本的留痕”，不是精确归属。</p>
+  </details>
+
+  <details class="qa">
+    <summary>它为什么不用 CRDT，而用 OT？</summary>
+    <p>一致性层不是它的贡献，它直接复用了团队成熟框架 CP-ROOF 的 OT 实现。对它而言一致性是前提条件，真正的难点在“历史 → diff 的归属”。换成 CRDT 也不影响其核心算法。</p>
+  </details>
+
+  <details class="qa">
+    <summary>为什么一定要绕回 diff，不直接记录操作？</summary>
+    <p>因为要与 Git 生态兼容：blame、log、各类 Git GUI 都基于 commit + diff。只有把操作历史映射回 diff 坐标，产物才能被现有工具链消费，用户才不用换工具。</p>
+  </details>
+
+  <details class="qa">
+    <summary>“最后修改者优先”合理吗？</summary>
+    <p>与 blame 语义一致，工程上可解释；但会掩盖共同编辑的过程，尤其结对编程时一行可能被两人反复改。可作为局限讨论，也可提出扩展：保留多作者标注或按编辑区间细分。</p>
+  </details>
+
+  <details class="qa">
+    <summary>它的评估够不够硬？</summary>
+    <p>不够硬，但与其定位匹配：13 人、5 队、实验室任务、SUS 描述统计、无显著性检验。它能支持“可用、性能可接受”的结论，不能支持“显著优于传统方式”。引用时应如实描述，不宜写成“实验证明显著提升”。</p>
+  </details>
+</section>
+
+<div class="footer">
+  <p>讲解对象：Ma Y, Qi B, Xu W, Wang M, Du B, Fan H. <i>Integrating Real-Time and Non-Real-Time Collaborative Programming: Workflow, Techniques, and Prototypes</i>. PACM HCI, 2023, 7(GROUP): Article 13, 19 pages. DOI: 10.1145/3567563。</p>
+  <p>文中页码以 ACM 排版为准：提交模式见 13:8—13:9，Colored Lines 算法见 13:10—13:12，性能表见 13:17，评估见 13:14—13:17。本页为阅读辅助材料，观点部分（第 9、10 节）为讲解者判断，引用时请以原文为准。</p>
+</div>
+
+</main>
+
+<a class="totop" href="#" title="回到顶部" aria-label="回到顶部">↑</a>
+</body>
+</html>
