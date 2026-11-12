@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """构建 latex/ 下的两份行政表格 PDF，并归档到 deliverables/。
 
@@ -21,7 +21,7 @@ DELIVERABLES = ROOT / "deliverables"
 # 入口文件 -> 归档文件名
 TARGETS = {
     "taskbook": "毕业设计任务书-latex-v6-20261103.pdf",
-    "proposal": "毕业设计开题报告-latex-v11-20261112.pdf",
+    "proposal": "毕业设计开题报告-latex-v14-20261112.pdf",
 }
 
 LATEXMK_ARGS = [

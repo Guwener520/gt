@@ -11,8 +11,8 @@
 - 可编辑 Markdown 镜像（与 body 逐段对应，供改稿；改后同步 body，见 `AGENTS.md` 第 7 节）：
   - 开题报告：`../thesis/proposal.md`（4 节 + 摘要 + 44 篇文献；由 `scripts/tex2md.py` 从 body 生成）
   - 任务书：`../thesis/task-book.md`（6 节 + 18 篇文献；同上）
-- Word 版成品（用于核对文字）：`../deliverables/archive/毕业设计开题报告-v3-20261028.pdf`、
-  `../deliverables/毕业设计任务书-v6-20261103.docx`
+- 历史成品（用于核对文字）：`../deliverables/archive/毕业设计开题报告-v3-20261028.pdf`；
+  任务书 v6 的 docx 副本已于 2026-11-12 随冗余文件清理删除，可编辑文本以 `../thesis/task-book.md` 为准。
 
 ## 1. 可用排版命令（不要手写字号/字族）
 

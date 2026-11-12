@@ -139,7 +139,7 @@ def fig_route():
 
 # --------------------------------------------------------------------------- fig 2
 def fig_model():
-    H = 1080
+    H = 990
     im = Image.new("RGB", (W, H), "white")
     d = ImageDraw.Draw(im)
     f_title, f_sub, f_rel = font(36, True), font(26), font(27)
@@ -200,7 +200,6 @@ def fig_model():
     d.line([(700, ly), (800, ly)], fill=WARM_E, width=2)
     d.polygon([(800, ly), (786, ly - 9), (786, ly + 9)], fill=WARM_E)
     text_left(d, 820, ly, "快照 / 演化（回退、重写）", f_note, SUB)
-    text_left(d, 150, 995, "箭头方向表示证据来源到证据结果；所有实体以 task_id 归属开发任务，hunk 以内容哈希标识。", f_note, SUB)
 
     im.save(OUT / "fig2-model.png", dpi=(300, 300))
 
